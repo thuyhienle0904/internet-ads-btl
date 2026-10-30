@@ -1,0 +1,49 @@
+% Shared document body. Do not add report content here; write in sections/ instead.
+\begin{document}
+\coverpage
+
+\frontmatter
+% Uncomment only if the group needs these pages and has replaced template text.
+%\include{chapters/front/declaration}
+%\include{chapters/front/acknowledge}
+%\include{chapters/front/abstract}
+
+\tableofcontents
+\clearpage
+\listoftables
+\clearpage
+\listoffigures
+
+\mainmatter
+\counterwithin{equation}{section}
+\counterwithin{table}{section}
+\counterwithin{figure}{section}
+
+\chapter{Tổng quan dữ liệu}
+\include{sections/01_overview}
+
+\chapter{Kiến thức nền}
+\include{sections/02_background}
+
+\chapter{Tiền xử lý dữ liệu}
+\include{sections/03_preprocessing}
+
+\chapter{Thống kê mô tả}
+\include{sections/04_descriptive}
+
+\chapter{Thống kê suy diễn}
+\include{sections/05_inference}
+
+\chapter{Thảo luận và mở rộng}
+\include{sections/06_discussion}
+
+\chapter{Nguồn dữ liệu và nguồn code}
+\include{sections/07_sources}
+
+\chapter{Tài liệu tham khảo}
+\include{sections/08_references}
+\bibliographystyle{plain}
+\bibliography{refs/references}
+
+\backmatter
+\end{document}

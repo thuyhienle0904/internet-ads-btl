@@ -1,0 +1,36 @@
+# Dữ liệu Kaggle và đầu ra có thể tái tạo: không đưa lên GitHub.
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+# Các file dữ liệu cũ đang nằm trực tiếp trong data/ cũng không được commit.
+data/*.csv
+data/*.zip
+data/*.data
+data/*.names
+data/*.DOCUMENTATION
+output/*
+!output/.gitkeep
+!output/tables/
+!output/tables/.gitkeep
+!output/figures/
+!output/figures/.gitkeep
+
+# Bí mật và tệp cục bộ.
+kaggle.json
+.kaggle/
+.Rhistory
+.RData
+.Rproj.user/
+*.aux
+*.log
+*.out
+*.pdf
+*.toc
+*.lof
+*.lot
+*.bbl
+*.blg
+*.fls
+*.fdb_latexmk
+*.synctex.gz
