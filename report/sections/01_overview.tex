@@ -1,3 +1,23 @@
 % Owner: Tường
-% Fill in: dataset source, unit of observation, target ad/nonad, collection context,
-% dataset scope, variables and limitations. Cite every external dataset source.
+\section{Source and Unit of Observation}
+
+The Internet Advertisements dataset was obtained from
+\href{https://www.kaggle.com/datasets/uciml/internet-advertisements-data-set/data}{Kaggle}
+and is documented by the
+\href{https://archive.ics.uci.edu/dataset/51/internet+advertisements}{UCI Machine Learning Repository}.
+Each observation represents an image or image element on a web page.
+The target is whether the image is an advertisement (\texttt{ad}) or
+not (\texttt{nonad}). The task concerns image classification rather
+than advertising expenditure, clicks, or conversions.
+
+\section{Dataset Structure}
+
+The supplied \texttt{add.csv} contains 3,279 observations and 1,560
+columns, including an exported row index and the target label.
+The 1,558 features consist of three geometric measurements, a binary
+\texttt{local} indicator, and 1,554 other binary indicators.
+The original numeric headers are retained in the data dictionary so
+that every processed column can be traced to its source. Height and
+width are measured in pixels; aspect ratio is width divided by height.
+This historical dataset supports comparisons within the observed
+sample; it does not establish performance on contemporary websites.

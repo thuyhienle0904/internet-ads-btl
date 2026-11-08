@@ -1,2 +1,50 @@
 % Owner: Tường
-% Fill in: raw-to-processed workflow; issue -> treatment -> reason; final input/output.
+\section{Processing Workflow}
+
+The workflow builds on Tuong's original steps: inspect the input,
+standardize column names and missing values, audit repeated rows, and
+export the data with a dictionary. The full Kaggle CSV has a header,
+which is read as column metadata rather than as an observation.
+The original file remains unchanged.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Preprocessing decisions for the full Kaggle file.}
+\label{tab:preprocessing-decisions}
+\begin{tabular}{@{}p{0.23\linewidth}p{0.37\linewidth}p{0.32\linewidth}@{}}
+\toprule
+Issue & Treatment & Rationale\\
+\midrule
+Exported index & Verify the sequence from 0 to 3,278 and exclude the column. &
+The index is not a measured feature.\\
+Numeric headers & Name the geometry fields and \texttt{local}; preserve the
+source header for each binary indicator in the dictionary. &
+Keep the mapping auditable without guessing term meanings.\\
+Missing values & Trim whitespace and represent missing values as \texttt{NA}. &
+Unknown values must not be counted as zeros.\\
+Target labels & Map only \texttt{ad.} and \texttt{nonad.} to \texttt{ad}
+and \texttt{nonad}. & Unexpected labels are rejected.\\
+Repeated rows & Count exact repeats after excluding the index and retain them. &
+Identical recorded features do not prove two images are the same.\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Output and Validation}
+
+The processed CSV contains 3,279 observations and 1,559 columns:
+1,558 features and one label. No rows were dropped. The audit found
+856 repeated feature-and-label rows beyond their first occurrences
+and 2,729 missing cells. Missing counts for height, width, aspect
+ratio, and \texttt{local} are 903, 901, 910, and 15, respectively.
+The missing-cell count differs from the number of affected images
+because an image can have more than one missing feature.
+
+\texttt{internet\_ads\_processed.csv} is the input for the descriptive
+analysis. Its companion \texttt{data\_dictionary.csv} records the source
+header, type, unit, and missing count of each column.
+No imputation or scaling was applied. Any later transformations that
+estimate parameters from data must be fitted on the training partition
+only. Repeated rows should also be reviewed before splitting the data
+so that potential duplicates do not inflate test performance.

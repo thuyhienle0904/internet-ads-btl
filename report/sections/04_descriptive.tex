@@ -1,2 +1,104 @@
-% Owner: Bách
-% Fill in: numbered descriptive tables/figures and interpretation for each result.
+% Owner: Bach. Results are based on the full processed Kaggle dataset.
+\section{Data and Scope}
+
+This section describes all 3,279 observations in
+\texttt{internet\_ads\_processed.csv}, produced from the supplied Kaggle
+\texttt{add.csv} by the preceding preprocessing workflow.
+The exploratory data analysis (EDA) focuses on
+three geometric features (\texttt{height}, \texttt{width}, and
+\texttt{aspect\_ratio}), the binary feature \texttt{local}, and the
+\texttt{ad/nonad} label. The aspect ratio is width divided by height.
+Question marks were treated as missing values. No values were imputed, and
+no outliers or duplicate rows were removed. These results describe the
+full processed dataset rather than a training subset.
+
+\section{Class Distribution and Missing Data}
+
+\begin{table}[htbp]
+\centering
+\caption{Class distribution and observations missing at least one geometric feature.}
+\label{tab:eda-classes}
+\begin{tabular}{lrrrr}
+\toprule
+Class & Count & Class share & Missing count & Within-class rate\\
+\midrule
+\texttt{ad}    & 459   & 14.00\% & 73  & 15.90\%\\
+\texttt{nonad} & 2,820 & 86.00\% & 837 & 29.68\%\\
+Total          & 3,279 & 100.00\% & 910 & 27.75\%\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+There are about 6.14 non-advertisements for every advertisement in this
+sample. Always predicting \texttt{nonad} would yield about 86\% accuracy on
+this dataset while detecting none of the advertisements. Model evaluation
+should therefore report a confusion matrix and recall for the \texttt{ad}
+class on a held-out test set. Missing geometric features are more common
+in the \texttt{nonad} class, so summaries based on observed values may not
+represent all images in each class.
+
+\section{Geometric Features by Class}
+
+Statistics are calculated separately for each feature using its observed
+values. Sample standard deviations use the denominator \(n-1\), and
+quartiles use linear interpolation equivalent to R's type 7 convention.
+The accompanying CSV also reports minima, maxima, and interquartile ranges.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Geometric features by class. Height and width are measured in pixels; aspect ratio is unitless.}
+\label{tab:eda-geometry}
+\begin{tabular}{llrrrrrr}
+\toprule
+Feature & Class & Observed & Missing & Mean & SD & Median & [Q1, Q3]\\
+\midrule
+Height & \texttt{ad} & 386 & 73 & 67.44 & 39.16 & 60 & [60, 60]\\
+       & \texttt{nonad} & 1,990 & 830 & 63.36 & 57.40 & 43 & [23, 90]\\
+Width  & \texttt{ad} & 386 & 73 & 323.89 & 164.60 & 460 & [126, 468]\\
+       & \texttt{nonad} & 1,992 & 828 & 122.69 & 91.50 & 101 & [73, 150]\\
+Ratio  & \texttt{ad} & 386 & 73 & 5.62 & 3.07 & 7.80 & [2.22, 7.80]\\
+       & \texttt{nonad} & 1,983 & 837 & 3.58 & 6.41 & 1.72 & [1.00, 4.34]\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\newcommand{\edageometryfigure}[3]{%
+  \IfFileExists{../output/eda/figures/#1}{%
+    \begin{figure}[htbp]
+      \centering
+      \includegraphics[width=0.94\linewidth]{../output/eda/figures/#1}
+      \caption{#2}
+      \label{#3}
+    \end{figure}
+  }{}%
+}
+\edageometryfigure{numeric_001.png}{Height histogram and boxplots by class.}{fig:eda-height}
+\edageometryfigure{numeric_002.png}{Width histogram and boxplots by class.}{fig:eda-width}
+\edageometryfigure{numeric_003.png}{Aspect ratio histogram and boxplots by class.}{fig:eda-ratio}
+
+Among images with observed widths, the median is 460 px for \texttt{ad}
+and 101 px for \texttt{nonad}. The distributions overlap, so a single
+width threshold would not separate the two classes perfectly. For
+\texttt{ad}, both height quartiles equal 60 px; an interquartile range of
+zero does not mean all observed heights equal 60 px. The median aspect
+ratio is also higher for \texttt{ad}. The \texttt{nonad} ratio distribution
+has a long right tail, with a mean of 3.58 and a median of 1.72.
+The median and quartiles help describe these distributions alongside
+the mean and standard deviation.
+
+\section{Binary Feature and Limitations}
+
+Among observed \texttt{local} values, 352 of 454 (77.53\%) equal 1 in
+the \texttt{ad} class, compared with 2,152 of 2,810 (76.58\%) in the
+\texttt{nonad} class. The observed difference is about 0.95 percentage
+points. These denominators exclude five missing values in \texttt{ad}
+and ten in \texttt{nonad}. This section does not compare individual
+text-derived features, so it cannot identify the best predictor across
+the full feature set.
+
+Width and aspect ratio are candidates for further analysis. The
+differences reported here are descriptive; no hypothesis tests were
+performed. Any feature selection should be repeated on the agreed
+training set. Keep the test set separate and estimate imputation rules
+using the training data only.
