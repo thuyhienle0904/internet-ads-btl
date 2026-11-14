@@ -15,3 +15,6 @@ eda_config <- list(
 )
 
 run_eda(eda_config)
+
+processed <- read.csv(eda_config$input_file, check.names = FALSE, na.strings = c("", "NA"))
+write_geometry_relationships(processed, eda_config)

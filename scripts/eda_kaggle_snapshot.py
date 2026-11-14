@@ -91,6 +91,48 @@ def save(fig, path):
     plt.close(fig)
 
 
+def describe_relationships(data, tables, figures):
+    complete = [r for r in data if all(v is not None for v in r[:3])]
+    matrix = [[stats.correlation([r[i] for r in complete], [r[j] for r in complete])
+               for j in range(3)] for i in range(3)]
+    write_csv(tables / "geometry_correlations.csv", ("feature_x", "feature_y", "n_complete", "pearson_r"),
+              [(FIELDS[i], FIELDS[j], len(complete), matrix[i][j])
+               for i in range(3) for j in range(i, 3)])
+    fig, ax = plt.subplots(figsize=(6, 4), layout="constrained")
+    heat = ax.imshow(matrix, vmin=-1, vmax=1, cmap="BrBG")
+    ax.set_xticks(range(3), FIELDS[:3])
+    ax.set_yticks(range(3), FIELDS[:3])
+    ax.set_title(f"Pearson correlation; complete geometry n={len(complete):,}")
+    for i in range(3):
+        for j in range(3):
+            ax.text(j, i, f"{matrix[i][j]:.3f}", ha="center", va="center",
+                    color="white" if abs(matrix[i][j]) > .65 else "black")
+    fig.colorbar(heat, ax=ax, label="Pearson r")
+    save(fig, figures / "geometry_correlations.png")
+    fig, axes = plt.subplots(1, 3, figsize=(11, 3.5), layout="constrained")
+    for ax, (i, j) in zip(axes, ((0, 1), (0, 2), (1, 2))):
+        for label, color in reversed(list(zip(LABELS, COLORS))):
+            rows = [r for r in complete if r[-1] == label]
+            ax.scatter([r[i] for r in rows], [r[j] for r in rows],
+                       s=9, alpha=.35, color=color, label=f"{label} (n={len(rows)})")
+        ax.set(xlabel=NAMES[i], ylabel=NAMES[j])
+        ax.grid(alpha=.15)
+    axes[0].legend(fontsize=8)
+    fig.suptitle("Observed geometry pairs by class; complete cases, original scales")
+    save(fig, figures / "geometry_scatterplots.png")
+    audit = []
+    for label in (*LABELS, "all"):
+        rows = data if label == "all" else [r for r in data if r[-1] == label]
+        for i, feature in enumerate(FIELDS[:3]):
+            values = observed(rows, i)
+            q1, _, q3 = stats.quantiles(values, n=4, method="inclusive")
+            lower, upper = q1 - 1.5 * (q3 - q1), q3 + 1.5 * (q3 - q1)
+            flagged = sum(v < lower or v > upper for v in values)
+            audit.append((feature, label, len(values), lower, upper, flagged, flagged / len(values)))
+    write_csv(tables / "outlier_audit.csv",
+              ("variable", "group", "n_valid", "lower_fence", "upper_fence", "n_flagged", "proportion_flagged"), audit)
+
+
 def build(source, processed, output):
     sha = export_processed(source, processed, output / "tables")
     with processed.open(encoding="utf-8", newline="") as file:
@@ -159,9 +201,11 @@ def build(source, processed, output):
     ax.set(ylim=(0, 100), ylabel="Local = 1 (% of observed values)")
     ax.grid(axis="y", alpha=.2)
     save(fig, figures / "binary_001.png")
+    describe_relationships(data, tables, figures)
     write_csv(tables / "figure_index.csv", ("variable", "file"),
               [(v, f"numeric_{i:03}.png") for i, v in enumerate(FIELDS[:3], 1)]
-              + [("local", "binary_001.png")])
+              + [("local", "binary_001.png"), ("geometry_correlation", "geometry_correlations.png"),
+                 ("geometry_pairs", "geometry_scatterplots.png")])
     (output / "run_metadata.txt").write_text(
         f"Source: Kaggle uciml/internet-advertisements-data-set / add.csv\n"
         f"Source SHA-256: {sha}\nProcessed input: {processed}\n"

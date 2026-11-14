@@ -1,4 +1,14 @@
 % Owner: Bach. Results are based on the full processed Kaggle dataset.
+\newcommand{\edageometryfigure}[3]{%
+  \IfFileExists{../output/eda/figures/#1}{%
+    \begin{figure}[htbp]
+      \centering
+      \includegraphics[width=0.94\linewidth]{../output/eda/figures/#1}
+      \caption{#2}
+      \label{#3}
+    \end{figure}
+  }{}%
+}
 \section{Data and Scope}
 
 This section describes all 3,279 observations in
@@ -12,7 +22,56 @@ Question marks were treated as missing values. No values were imputed, and
 no outliers or duplicate rows were removed. These results describe the
 full processed dataset rather than a training subset.
 
+
+\subsection*{R Implementation and Input}
+
+\begin{lstlisting}[style=edaR]
+source("scripts/eda_helpers.R")
+data <- read.csv(
+  "data/processed/internet_ads_processed.csv",
+  check.names = FALSE, na.strings = c("", "NA")
+)
+geometry <- c("height", "width", "aspect_ratio")
+labels <- c("ad", "nonad")
+stopifnot(nrow(data) == 3279L)
+stopifnot(all(data$label %in% labels))
+\end{lstlisting}
+
+The following R excerpts illustrate the calculations used in
+\texttt{scripts/02\_eda\_descriptive.R} and its helper functions.
+Run the excerpts in order from the repository root. The processed input
+already contains standardized names and labels. The checks confirm the
+expected number of observations and class encoding before summarization.
+The numerical results and embedded figures were generated and verified
+using \texttt{scripts/eda\_kaggle\_snapshot.py}. The R implementation
+uses the same statistical definitions; runtime verification of R remains
+pending. Figure styling can differ between the two implementations.
+
 \section{Class Distribution and Missing Data}
+
+
+\subsection*{Class Counts and Missingness}
+
+\begin{lstlisting}[style=edaR]
+class_summary <- summarize_labels(data, "label", labels)
+geometry_missing <- !complete.cases(data[, geometry])
+missing_by_class <- do.call(rbind, lapply(labels, function(k) {
+  selected <- data$label == k
+  data.frame(
+    class = k, n = sum(selected),
+    missing = sum(geometry_missing[selected]),
+    missing_rate = mean(geometry_missing[selected])
+  )
+}))
+print(class_summary)
+print(missing_by_class)
+\end{lstlisting}
+
+\texttt{summarize\_labels} counts each class and divides by the total
+number of rows. \texttt{complete.cases} identifies rows with all three
+geometric values; negation marks rows with at least one missing value.
+The rate within a class uses that class's row count as its denominator.
+A row missing several features contributes only once to this row count.
 
 \begin{table}[htbp]
 \centering
@@ -29,6 +88,8 @@ Total          & 3,279 & 100.00\% & 910 & 27.75\%\\
 \end{tabular}
 \end{table}
 
+\edageometryfigure{class_distribution.png}{Class counts and proportions in the full processed dataset (n=3,279).}{fig:eda-classes-plot}
+
 There are about 6.14 non-advertisements for every advertisement in this
 sample. Always predicting \texttt{nonad} would yield about 86\% accuracy on
 this dataset while detecting none of the advertisements. Model evaluation
@@ -43,6 +104,32 @@ Statistics are calculated separately for each feature using its observed
 values. Sample standard deviations use the denominator \(n-1\), and
 quartiles use linear interpolation equivalent to R's type 7 convention.
 The accompanying CSV also reports minima, maxima, and interquartile ranges.
+
+\subsection*{Grouped Summaries and Distribution Plots}
+
+\begin{lstlisting}[style=edaR]
+numeric_summary <- summarize_numeric(
+  data, geometry, "label", labels
+)
+print(numeric_summary[numeric_summary$group != "all", ])
+dir.create("output/eda-r/figures", recursive = TRUE,
+           showWarnings = FALSE)
+for (i in seq_along(geometry)) {
+  plot_eda_numeric(
+    data, geometry[i], "label", labels,
+    sprintf("output/eda-r/figures/numeric_%03d.png", i)
+  )
+}
+\end{lstlisting}
+
+\texttt{summarize\_numeric} applies \texttt{numeric\_summary\_one}
+to each feature overall and within each class. The helper removes missing
+values separately for each calculation, uses \texttt{sd} for sample SD,
+and \texttt{quantile(..., type = 7)} for quartiles.
+\texttt{plot\_eda\_numeric} saves a histogram of all observed values and
+boxplots split by label. The plot retains extreme values so the distribution's
+spread remains visible.
+
 
 \begin{table}[htbp]
 \centering
@@ -63,16 +150,6 @@ Ratio  & \texttt{ad} & 386 & 73 & 5.62 & 3.07 & 7.80 & [2.22, 7.80]\\
 \end{tabular}
 \end{table}
 
-\newcommand{\edageometryfigure}[3]{%
-  \IfFileExists{../output/eda/figures/#1}{%
-    \begin{figure}[htbp]
-      \centering
-      \includegraphics[width=0.94\linewidth]{../output/eda/figures/#1}
-      \caption{#2}
-      \label{#3}
-    \end{figure}
-  }{}%
-}
 \edageometryfigure{numeric_001.png}{Height histogram and boxplots by class.}{fig:eda-height}
 \edageometryfigure{numeric_002.png}{Width histogram and boxplots by class.}{fig:eda-width}
 \edageometryfigure{numeric_003.png}{Aspect ratio histogram and boxplots by class.}{fig:eda-ratio}
@@ -87,7 +164,200 @@ has a long right tail, with a mean of 3.58 and a median of 1.72.
 The median and quartiles help describe these distributions alongside
 the mean and standard deviation.
 
+
+\section{Overall Numerical Summary}
+
+Table~\ref{tab:eda-overall} summarizes each geometric feature using all
+available values. Different observed counts reflect missingness per feature.
+The smallest aspect ratio is reported to four decimal places to retain its scale.
+
+\subsection*{Overall Statistics}
+
+\begin{lstlisting}[style=edaR]
+overall_summary <- numeric_summary[
+  numeric_summary$group == "all",
+  c("variable", "n_valid", "n_missing", "mean", "sd",
+    "min", "q1", "median", "q3", "max", "iqr")
+]
+print(overall_summary)
+\end{lstlisting}
+
+Selecting \texttt{group == "all"} reuses the same summary calculations
+without separating classes. \texttt{n\_valid} and \texttt{n\_missing}
+make each feature's denominator explicit. Calculations retain full precision;
+rounding is applied only when presenting the report tables.
+
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Overall observed geometric features. Height and width are in pixels.}
+\label{tab:eda-overall}
+\begin{tabular}{lrrr}
+\toprule
+Statistic & Height & Width & Aspect ratio\\
+\midrule
+Observed & 2,376 & 2,378 & 2,369\\
+Missing & 903 & 901 & 910\\
+Mean & 64.02 & 155.34 & 3.91\\
+Sample SD & 54.87 & 130.03 & 6.04\\
+Minimum & 1 & 1 & 0.0015\\
+Q1 & 25 & 80 & 1.0357\\
+Median & 51 & 110 & 2.1020\\
+Q3 & 85.25 & 184 & 5.3333\\
+Maximum & 640 & 640 & 60\\
+IQR & 60.25 & 104 & 4.2976\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All three overall means exceed their medians, consistent with the right
+ tails visible in the histograms. Width has substantial spread (SD 130.03 px),
+while aspect ratio ranges from 0.0015 to 60. The overall statistics pool
+classes with different distributions, so the preceding class-specific
+summaries remain necessary for interpretation.
+
+\section{Relationships between Geometric Features}
+
+The correlation matrix and scatterplots use the same 2,369 observations
+with all three geometric values available (386 \texttt{ad} and 1,983
+\texttt{nonad}). This common sample makes the plotted relationships
+comparable; it excludes 910 observations and may be affected by the
+class-dependent missingness described earlier.
+Pearson's sample correlation is
+\[
+ r_{XY}=\frac{\sum_{i=1}^{n}(x_i-\bar{x})(y_i-\bar{y})}
+ {\sqrt{\sum_{i=1}^{n}(x_i-\bar{x})^2\sum_{i=1}^{n}(y_i-\bar{y})^2}}.
+\]
+It measures linear association and is sensitive to extreme observations.
+
+\subsection*{Correlation and Class-Colored Scatterplots}
+
+\begin{lstlisting}[style=edaR]
+complete_geometry <- data[
+  complete.cases(data[, geometry]),
+  c(geometry, "label")
+]
+correlation <- cor(complete_geometry[, geometry],
+                   method = "pearson")
+print(nrow(complete_geometry))
+print(correlation)
+class_colors <- c(ad = "#28786d", nonad = "#a76423")
+pairs(
+  complete_geometry[, geometry], pch = 16, cex = 0.4,
+  col = adjustcolor(
+    class_colors[complete_geometry$label], alpha.f = 0.35
+  )
+)
+\end{lstlisting}
+
+The common complete-case subset gives every correlation the same
+2,369 observations. \texttt{cor} computes Pearson correlations between
+the three numeric columns. \texttt{pairs} plots each geometric pair,
+with colors indexed by the class label and transparent points to reveal
+overlap. The production R function \texttt{write\_geometry\_relationships}
+exports the correlations, a heatmap, scatterplots, and the outlier audit.
+The embedded Python scatter figure displays the three distinct pairs once.
+
+
+\edageometryfigure{geometry_correlations.png}{Pearson correlations on the common complete-case geometry sample (n=2,369).}{fig:eda-correlations}
+\edageometryfigure{geometry_scatterplots.png}{Geometric feature pairs on original scales, colored by class (n=2,369). Transparency reduces overplotting; coincident observations can still overlap.}{fig:eda-scatter}
+
+Height and width have a weak positive linear association
+(\(r=0.181\)). Height and aspect ratio have a negative association
+(\(r=-0.285\)), while width and aspect ratio have a stronger positive
+association (\(r=0.536\)). Aspect ratio is defined from width and height,
+so these relationships partly reflect its mathematical construction.
+The correlations pool both classes and do not establish causation or
+predictive performance. The scatterplots also show class overlap and
+concentrations at recurring image dimensions. Model specifications
+using both the ratio and its components should be assessed on training data.
+
+\section{Extreme Values and Interpretation}
+
+For each feature and group, potential outliers are flagged using
+\[
+ \mathrm{IQR}=Q_3-Q_1,\qquad
+ L=Q_1-1.5\,\mathrm{IQR},\qquad U=Q_3+1.5\,\mathrm{IQR}.
+\]
+An observed value is flagged when it is strictly below \(L\) or above
+\(U\). Quartiles use the same type 7 convention as the descriptive tables.
+The thresholds describe a distribution and do not identify data errors.
+
+\subsection*{Flagging Potential Outliers}
+
+\begin{lstlisting}[style=edaR]
+iqr_flags <- function(x) {
+  x <- x[!is.na(x)]
+  q <- quantile(x, c(0.25, 0.75), type = 7,
+                names = FALSE)
+  lower <- q[1] - 1.5 * diff(q)
+  upper <- q[2] + 1.5 * diff(q)
+  flagged <- x < lower | x > upper
+  data.frame(n_valid = length(x), lower_fence = lower,
+             upper_fence = upper, n_flagged = sum(flagged),
+             proportion_flagged = mean(flagged))
+}
+lapply(data[, geometry], iqr_flags)
+iqr_flags(data$height[data$label == "ad"])
+\end{lstlisting}
+
+This excerpt expresses the same fence calculation as the production
+outlier audit. Missing values are excluded before computing quartiles.
+Strict inequalities flag values beyond the fences. Applying the function
+to all rows gives pooled thresholds; restricting to \texttt{ad} gives
+class-specific thresholds. The calculation records counts and rates while
+retaining the original dataset.
+
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Potential outliers under feature-specific fences calculated on pooled observed values.}
+\label{tab:eda-outliers}
+\begin{tabular}{lrrrr}
+\toprule
+Feature & Lower fence & Upper fence & Flagged / observed & Rate\\
+\midrule
+Height & -65.375 & 175.625 & 84 / 2,376 & 3.54\%\\
+Width & -76.000 & 340.000 & 282 / 2,378 & 11.86\%\\
+Aspect ratio & -5.4107 & 11.7797 & 33 / 2,369 & 1.39\%\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+These pooled fences differ from the within-class fences underlying the
+boxplots. For advertisement height, \(Q_1=Q_3=60\) px, making both
+fences 60 px and flagging all 163 observed heights different from 60
+(42.23\% of 386). This illustrates how a concentration at a standard
+image size can make the IQR rule overly restrictive. Advertisement width
+has no flagged values under its own fences, although many wide advertisements
+exceed the pooled width fence. Class structure therefore matters when
+interpreting apparent extremes.
+
+All observations are retained. Large dimensions and extreme ratios can
+represent genuine image formats; mean and SD may be influenced by their
+magnitudes, so median and IQR are reported alongside them. Any later
+exclusion or transformation needs a documented rationale and a sensitivity
+analysis. Rules estimated for modeling should be fitted on the training
+partition, with evaluation on a held-out set.
+
 \section{Binary Feature and Limitations}
+
+\subsection*{Observed Local Prevalence}
+
+\begin{lstlisting}[style=edaR]
+local_summary <- summarize_binary(
+  data, "local", "label", labels
+)
+print(local_summary[local_summary$group != "all", ])
+\end{lstlisting}
+
+\texttt{summarize\_binary} counts observed ones and divides by the
+number of non-missing values in each group. The output also records missing
+counts. This prevents missing \texttt{local} values from being treated as
+zeros or included in the prevalence denominator.
+
 
 Among observed \texttt{local} values, 352 of 454 (77.53\%) equal 1 in
 the \texttt{ad} class, compared with 2,152 of 2,810 (76.58\%) in the
@@ -96,6 +366,8 @@ points. These denominators exclude five missing values in \texttt{ad}
 and ten in \texttt{nonad}. This section does not compare individual
 text-derived features, so it cannot identify the best predictor across
 the full feature set.
+
+\edageometryfigure{binary_001.png}{Local prevalence by class among observed values. Missing values are excluded from each denominator.}{fig:eda-local}
 
 Width and aspect ratio are candidates for further analysis. The
 differences reported here are descriptive; no hypothesis tests were

@@ -45,4 +45,8 @@ The R workflow writes the same processed schema and generates descriptive output
 - `output/eda/figures/`: class distribution, three geometric-feature panels, and Local prevalence.
 - `METHODS_LOG.md`: analysis methods and calculation conventions.
 
-Data and generated outputs are ignored by Git. Review the full processed file and mapping with Tuong before merging. If preprocessing changes, regenerate the outputs and revise the report together. Agree on the split with Tan before using EDA for feature selection, review exact repeats for possible cross-split leakage, and fit imputation rules on training data only.
+Data and generated tables remain ignored by Git. The seven PNGs embedded in Chapter 4 are versioned under `output/eda/figures/` so a fresh checkout can compile the report with its figures. Review the full processed file and mapping with Tuong before merging. If preprocessing changes, regenerate the outputs and revise the report together. Agree on the split with Tan before using EDA for feature selection, review exact repeats for possible cross-split leakage, and fit imputation rules on training data only.
+
+## Extended descriptive analysis
+
+The report includes overall numerical summaries, a Pearson correlation heatmap and class-colored geometry scatterplots on the common 2,369 complete cases, and a 1.5-IQR outlier audit pooled and by class. New outputs are `geometry_correlations.csv`, `outlier_audit.csv`, `geometry_correlations.png`, and `geometry_scatterplots.png`. There are seven Python figures in total. The R entry point also calls `write_geometry_relationships` and writes the extended outputs to `output/eda-r/`; its runtime remains unverified. No observations are removed by the flags. Inferential tests remain for the inference owner to coordinate.
