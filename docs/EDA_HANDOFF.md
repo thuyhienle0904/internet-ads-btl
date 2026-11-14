@@ -25,10 +25,10 @@ No imputation or row removal was performed. There are 856 exact repeated rows be
 From the repository root, use Python with Matplotlib to generate the tables and figures:
 
 ```bash
-python3 scripts/eda_kaggle_snapshot.py data/raw/add.csv
+python3 scripts/eda_kaggle_snapshot.py
 ```
 
-The script also accepts the original Kaggle ZIP. It validates the schema, writes the full processed CSV and dictionary under `data/processed/`, then reads that CSV to generate EDA. The source SHA-256 and audit counts are recorded in `output/eda/tables/preprocessing_audit.csv`. Rerunning replaces these generated outputs.
+When `data/raw/add.csv` is absent, the script downloads the latest `add.csv` from Kaggle automatically. Use `--download` to refresh it. The script also accepts the original Kaggle ZIP. It validates the schema, writes the full processed CSV and dictionary under `data/processed/`, then reads that CSV to generate EDA. The source SHA-256 and audit counts are recorded in `output/eda/tables/preprocessing_audit.csv`. Rerunning replaces these generated outputs.
 
 ```bash
 Rscript tests/test_eda.R

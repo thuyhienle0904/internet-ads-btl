@@ -1,0 +1,4 @@
+# Third-party Python dependencies for this project.
+# Standard-library modules (argparse, csv, pathlib, etc.) do not need listing.
+matplotlib
+kagglehub[pandas-datasets]

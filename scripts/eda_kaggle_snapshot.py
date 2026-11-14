@@ -14,11 +14,41 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 
+DATASET_HANDLE = "uciml/internet-advertisements-data-set"
+DATASET_FILE_PATH = "add.csv"
 FIELDS = ("height", "width", "aspect_ratio", "local", "label")
 FULL_FIELDS = FIELDS[:4] + tuple(f"term_{i}" for i in range(4, 1558)) + ("label",)
 LABELS = ("ad", "nonad")
 COLORS = ("#28786d", "#a76423")
 NAMES = ("Height (px)", "Width (px)", "Aspect ratio (width / height)")
+
+
+def download_kaggle_source(destination):
+    """Download the latest Kaggle CSV and cache it locally for reproducible EDA."""
+    try:
+        import kagglehub
+        from kagglehub import KaggleDatasetAdapter
+    except ImportError as error:
+        raise RuntimeError(
+            "Install dependencies first: python -m pip install -r requirements.txt"
+        ) from error
+
+    print(f"Downloading {DATASET_HANDLE}/{DATASET_FILE_PATH} from Kaggle...")
+    df = kagglehub.dataset_load(
+        KaggleDatasetAdapter.PANDAS,
+        DATASET_HANDLE,
+        DATASET_FILE_PATH,
+        pandas_kwargs={"dtype": str, "keep_default_na": False},
+    )
+    if df.shape[1] != 1560:
+        raise ValueError("Kaggle returned an unexpected number of columns.")
+
+    # KaggleHub/Pandas names the blank index header 'Unnamed: 0'. Restore the
+    # original Kaggle header expected by the validation step below.
+    df.columns = [""] + [str(i) for i in range(1559)]
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(destination, index=False)
+    return destination
 
 
 def load_processed_rows(source):
@@ -175,9 +205,16 @@ def build(source, processed, output):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("source", type=Path, help="Original Kaggle add.csv or ZIP")
+    parser.add_argument("source", nargs="?", type=Path, default=Path("data/raw/add.csv"),
+                        help="Original Kaggle add.csv or ZIP (default: data/raw/add.csv)")
+    parser.add_argument("--download", action="store_true",
+                        help="Download the latest Kaggle add.csv before running the analysis")
     parser.add_argument("--processed", type=Path,
                         default=Path("data/processed/internet_ads_processed.csv"))
     parser.add_argument("--output", type=Path, default=Path("output/eda"))
     args = parser.parse_args()
+    if args.download or not args.source.exists():
+        if args.source.suffix.lower() != ".csv":
+            parser.error("Automatic Kaggle download requires a .csv source path.")
+        args.source = download_kaggle_source(args.source)
     build(args.source, args.processed, args.output)
