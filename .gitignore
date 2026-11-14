@@ -34,16 +34,3 @@ kaggle.json
 *.fls
 *.fdb_latexmk
 *.synctex.gz
-
-# Version the seven EDA figures embedded in the shared report.
-!output/eda/
-output/eda/*
-!output/eda/figures/
-output/eda/figures/*
-!output/eda/figures/class_distribution.png
-!output/eda/figures/numeric_001.png
-!output/eda/figures/numeric_002.png
-!output/eda/figures/numeric_003.png
-!output/eda/figures/geometry_correlations.png
-!output/eda/figures/geometry_scatterplots.png
-!output/eda/figures/binary_001.png

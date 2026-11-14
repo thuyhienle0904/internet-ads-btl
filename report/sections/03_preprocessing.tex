@@ -1,69 +1,75 @@
-% Owner: Tường
+% Owner: Tuong. Integrated from the revised preprocessing handoff.
 \section{Processing Workflow}
 
-Data preprocessing comprised input validation, column identification,
-missing-value standardization, label normalization, and an audit of
-repeated observations. The first row of the Kaggle CSV was interpreted
-as column metadata. The exported index was checked against the sequence
-from 0 to 3,278 and excluded from the analytical variables. Descriptive
-names were assigned to the geometric measurements and the
-\texttt{local} indicator. A data dictionary documented the correspondence
-between processed variables and their original column headers.
-Table~\ref{tab:preprocessing-decisions} summarizes the processing steps
-and their methodological rationale.
+The preprocessing procedure follows the five-variable branch of the
+reference report. The source CSV contains 3,279 observations and 1,560
+columns, including an exported index. The header was interpreted as
+column metadata, and the index sequence from 0 to 3,278 was validated.
+The selected source columns were 0, 1, 2, 3, and 1558, renamed
+\texttt{Height}, \texttt{Width}, \texttt{Aspect\_Ratio}, \texttt{Local},
+and \texttt{IsAds}. Whitespace was trimmed before missing-value markers
+were converted to \texttt{NA}. The labels \texttt{ad.} and
+\texttt{nonad.} were retained.
+
+The observed means were calculated before row removal:
+\[
+ \bar H_{\mathrm{obs}}=64.02188552188552,\qquad
+ \bar W_{\mathrm{obs}}=155.3448275862069.
+\]
+Missing height and width values were replaced by these respective means.
+All aspect ratios, including previously observed ratios, were recomputed
+as Width/Height. The 15 observations missing Local were then excluded.
+Exact duplicates on the five selected variables, including the label,
+were removed by retaining the first occurrence.
 
 \begin{table}[htbp]
 \centering
 \small
-\caption{Preprocessing procedures applied to the Kaggle dataset.}
+\caption{Stages of reference-aligned preprocessing.}
 \label{tab:preprocessing-decisions}
-\begin{tabular}{@{}p{0.23\linewidth}p{0.37\linewidth}p{0.32\linewidth}@{}}
+\begin{tabular}{lrrr}
 \toprule
-Data component & Processing procedure & Rationale\\
+Stage & Rows & Selected columns & Missing cells\\
 \midrule
-Exported index & The index sequence was validated and the column excluded. &
-The column identifies row positions and carries no measured image attribute.\\
-Column identifiers & Geometric variables and \texttt{local} received descriptive
-names; source headers were recorded in the dictionary. &
-The mapping supports traceability of the retained features.\\
-Missing values & Whitespace was trimmed and missing-value markers were
-standardized as \texttt{NA}. &
-Explicit missingness distinguishes unavailable measurements from observed zeros.\\
-Target labels & The source labels \texttt{ad.} and \texttt{nonad.} were
-normalized to \texttt{ad} and \texttt{nonad}; label validation checked
-for unexpected values. &
-Consistent class encoding supports subsequent summaries and analysis.\\
-Repeated observations & Exact repeated feature-and-label rows were counted
-after index removal and retained. &
-Matching recorded attributes alone provide insufficient evidence that
-observations refer to the same image.\\
+Five-variable selection & 3,279 & 5 & 2,729\\
+Mean imputation and ratio recomputation & 3,279 & 5 & 15\\
+Exclusion of missing Local & 3,264 & 5 & 0\\
+Deduplication on five variables & 1,050 & 5 & 0\\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \section{Output and Validation}
 
-The processed dataset contains 3,279 observations and 1,559 columns,
-comprising 1,558 features and one target label. All observations were
-retained. The audit identified 856 exact repeated feature-and-label rows
-beyond their first occurrences and 2,729 missing cells. The numbers of
-missing values in height, width, aspect ratio, and \texttt{local} are
-903, 901, 910, and 15, respectively. These counts refer to individual
-cells; observations with multiple missing attributes contribute to
-more than one feature count.
+The resulting \texttt{internet\_ads\_processed.csv} contains 1,050
+observations and five variables, with 93 advertisements and 957
+non-advertisements. The original missing counts were 903 for Height,
+901 for Width, 910 for Aspect\_Ratio, and 15 for Local. All missing
+values in the selected variables were resolved by the stated procedure.
+The final deduplication step excluded 2,214 rows from the 3,264 rows
+remaining after the Local filter.
 
-The processed dataset was exported as
-\texttt{internet\_ads\_processed.csv} for the descriptive analysis.
-The companion \texttt{data\_dictionary.csv} records each variable's
-source header, data type, measurement unit, and missing-value count.
-Missing measurements were preserved as \texttt{NA}, and numerical
-features retained their original scales. Descriptive summaries therefore
-use the available observations for each variable and report their
-respective sample sizes.
+The data dictionary records source columns, types, units, and processing
+conventions. The row audit records the original index, imputation flags,
+and the retention or removal decision for each source record.
+The supplied processed output was independently reconstructed from the
+raw CSV; all 1,050 rows, 3,279 row-audit decisions, and the delivered
+overall descriptive statistics were verified within floating-point tolerance.
+The original file checksum was also checked.
 
-The retained missing values and repeated records are relevant to
-subsequent modeling. Data-dependent transformations require estimation
-within the training partition to prevent information leakage.
-Repeated records also warrant assessment during partition design,
-since related observations appearing in both training and test sets
-can lead to optimistic estimates of predictive performance.
+\section{Methodological Scope}
+
+The 2,214 excluded rows represent repeated combinations of five processed
+variables. A full-record audit of the original features and labels,
+excluding the index, identifies 856 repeated rows beyond first occurrences.
+These two counts use different definitions. Distinct images can have
+identical values on the selected variables, and mean imputation can
+create additional repeated combinations. The reduction also changes the
+advertisement share from 14.00\% to 8.86\%.
+
+This procedure reproduces the reference report's mean-imputed branch.
+It provides the common input for Chapter~4. The reference report's later
+median-imputed modeling branch is separate. Mean imputation from the full
+sample serves the present descriptive replication; predictive evaluation
+requires a training/test design with imputation parameters estimated
+within the training partition.

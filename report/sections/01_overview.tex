@@ -16,8 +16,12 @@ The supplied \texttt{add.csv} contains 3,279 observations and 1,560
 columns, including an exported row index and the target label.
 The 1,558 features consist of three geometric measurements, a binary
 \texttt{local} indicator, and 1,554 other binary indicators.
-The original numeric headers are retained in the data dictionary so
-that every processed column can be traced to its source. Height and
-width are measured in pixels; aspect ratio is width divided by height.
-This historical dataset supports comparisons within the observed
-sample; it does not establish performance on contemporary websites.
+The descriptive analysis retains five variables: Height, Width,
+Aspect\_Ratio, Local, and IsAds. Their original column identifiers
+are recorded in the data dictionary. Height and width are measured in
+pixels; aspect ratio is width divided by height. The reference-aligned
+preprocessing procedure produces 1,050 records, comprising 93
+advertisements and 957 non-advertisements. The descriptive results
+therefore concern this reduced sample. The historical dataset supports
+comparisons within the recorded images; its results have limited
+applicability to contemporary websites.

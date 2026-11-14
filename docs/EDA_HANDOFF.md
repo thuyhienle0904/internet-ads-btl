@@ -1,52 +1,38 @@
-# Descriptive EDA Handoff
+# Reference-aligned preprocessing and descriptive analysis
 
-## Input audit
+## Current input and scope
 
-Tuong's handoff contains 100 rows and 10 fields in both the original and processed data. The processed header is `v1` through `v10`; the labels remain `ad.` (16) and `nonad.` (84). The dictionary does not identify the geometric variables. The 100-row input has no header, whereas the full Kaggle file does. Using the handoff script's `header = FALSE` on the full file would incorrectly import its header as an observation. Trimming whitespace alone does not remove the periods from the labels.
+The active EDA input is Tuong's revised five-variable preprocessing output, reproduced from the full Kaggle `add.csv`. The raw file has 3,279 observations and 1,560 columns including an exported index. The processed schema is `Height`, `Width`, `Aspect_Ratio`, `Local`, `IsAds`, with labels `ad.` and `nonad.`.
 
-The handoff report lists 3,280 observations and describes the ratio as height/width. The verified Kaggle CSV has 3,279 data rows plus a header. Its ratio agrees with width/height within 0.001 on all 2,369 rows with all three geometric values and positive dimensions. The handoff files were left unchanged.
+The pipeline selects five source columns, calculates Height/Width means from all observed raw values, imputes missing dimensions, recomputes every Width/Height ratio, removes 15 rows missing Local, and removes 2,214 repeats on all five selected columns. The final sample has 1,050 rows, 93 advertisements, 957 non-advertisements and no missing cells.
 
-## Scope and schema
-
-The report now uses the full [Kaggle dataset](https://www.kaggle.com/datasets/uciml/internet-advertisements-data-set/data) supplied by the user. The raw CSV has 1,560 columns: an index, 1,558 features, and a label. Preprocessing and EDA use the same 3,279 observations. The prior 100-row handoff was retained as a separate reference.
-
-| Original header | EDA field | Handling |
-|---|---|---|
-| Empty | Excluded | Row index, 0 through 3278 |
-| 0, 1, 2 | height, width, aspect_ratio | Pixels, pixels, width/height |
-| 3 | local | Retain 0/1 and preserve missingness |
-| 4 through 1557 | term_4 through term_1557 | Preserve all 1,554 binary indicators |
-| 1558 | label | Map ad. to ad and nonad. to nonad |
-
-No imputation or row removal was performed. There are 856 exact repeated rows beyond first occurrences after removing the index; they are counted, not removed. The full processed CSV has 1,559 columns and 2,729 missing cells. Class proportions use the total row count. Feature summaries use observed values separately for each feature and group. Sample SD uses n-1 and quartiles use linear interpolation equivalent to R type 7.
+This supersedes the earlier 3,279-row EDA and its lowercase field names. The current figures and Chapter 4 describe the reduced sample. Full-record repeats (856) and five-column repeats after imputation (2,214) are different quantities. Removing repeats on five variables can merge distinct images; the class share changes from 14.00% to 8.86%.
 
 ## Reproduction
 
-From the repository root, use Python with Matplotlib to generate the tables and figures:
+Place the original Kaggle `add.csv` in `data/raw/`. From the repository root, the Python route is
 
-```bash
-python3 scripts/eda_kaggle_snapshot.py data/raw/add.csv
+```sh
+python3 -m venv .venv
+.venv/bin/python -m pip install matplotlib
+.venv/bin/python scripts/eda_kaggle_snapshot.py data/raw/add.csv
 ```
 
-The script also accepts the original Kaggle ZIP. It validates the schema, writes the full processed CSV and dictionary under `data/processed/`, then reads that CSV to generate EDA. The source SHA-256 and audit counts are recorded in `output/eda/tables/preprocessing_audit.csv`. Rerunning replaces these generated outputs.
+The script validates the full raw schema and index, exports the reference-aligned processed CSV, dictionary and row audit, then reads the CSV for EDA. The audit records source SHA-256 and processing counts. Running it replaces the generated CSV and report figures with the 1,050-row version. It also accepts the original Kaggle ZIP.
 
-```bash
-Rscript tests/test_eda.R
+The R route is
+
+```sh
 Rscript scripts/01_data_setup.R
 Rscript scripts/02_eda_descriptive.R
 ```
 
-The R workflow writes the same processed schema and generates descriptive output in `output/eda-r/`. The report uses the verified Python output in `output/eda/`; the R run has not been verified because Rscript is unavailable on this machine.
+The preprocessing script preserves the revised Tuong handoff algorithm. Its generated execution log and LaTeX macros are directed to `output/preprocessing/` for integration into this repository. The EDA entry point uses the exact delivered schema and labels. R output is written to `output/eda-r/`; the report uses verified Python figures copied into `report/figures/eda/`.
 
-## Deliverables
+The supplied handoff records R 4.5.0 execution. The integrated R scripts have not been run locally because Rscript is unavailable. Python output has been checked independently against all 1,050 delivered rows and all 3,279 row decisions. Numerical descriptive calculations use sample SD (n-1) and type 7 quartiles.
 
-- `report/sections/04_descriptive.tex`: English report text, tables, and figure captions. Upload the PNGs and adjust the figure paths when integrating into Prism.
-- `output/eda/tables/`: class counts, missingness, numeric summaries, binary proportions, column inventory, and figure index.
-- `output/eda/figures/`: class distribution, three geometric-feature panels, and Local prevalence.
-- `METHODS_LOG.md`: analysis methods and calculation conventions.
+## Report and figures
 
-Data and generated tables remain ignored by Git. The seven PNGs embedded in Chapter 4 are versioned under `output/eda/figures/` so a fresh checkout can compile the report with its figures. Review the full processed file and mapping with Tuong before merging. If preprocessing changes, regenerate the outputs and revise the report together. Agree on the split with Tan before using EDA for feature selection, review exact repeats for possible cross-split leakage, and fit imputation rules on training data only.
+Chapters 1, 3, 4 and 7 share the same scope. Chapter 4 includes overall and grouped statistics, class frequencies, histograms/boxplots, Pearson correlations, class-colored scatterplots, normal Q-Q plots, IQR flags, and Local prevalence. Code excerpts and interpretation are in English.
 
-## Extended descriptive analysis
-
-The report includes overall numerical summaries, a Pearson correlation heatmap and class-colored geometry scatterplots on the common 2,369 complete cases, and a 1.5-IQR outlier audit pooled and by class. New outputs are `geometry_correlations.csv`, `outlier_audit.csv`, `geometry_correlations.png`, and `geometry_scatterplots.png`. There are seven Python figures in total. The R entry point also calls `write_geometry_relationships` and writes the extended outputs to `output/eda-r/`; its runtime remains unverified. No observations are removed by the flags. Inferential tests remain for the inference owner to coordinate.
+Eight PNG figures in `report/figures/eda/` are tracked for shared LaTeX compilation. Raw/processed CSVs, generated tables, logs and local environments are excluded from Git. Hypothesis tests and modeling are coordinated in the inference section. The reference's later median-imputed modeling branch is separate from this mean-imputed descriptive branch. Any predictive evaluation requires a separate train/test and training-only imputation design.

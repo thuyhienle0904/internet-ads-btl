@@ -10,11 +10,19 @@ The analysis source is maintained in the
 The repository contains the preprocessing and descriptive-analysis scripts
 and the figures embedded in this report.
 
-The computational workflow executes \texttt{scripts/eda\_kaggle\_snapshot.py}
-on \texttt{data/raw/add.csv} with Python and Matplotlib. It first writes
-the processed CSV and dictionary, then reads that CSV to generate the
-tables and figures in \texttt{output/eda/}. The audit records the
-SHA-256 checksum of the raw input. The corresponding R entry points
-are \texttt{scripts/01\_data\_setup.R} and
-\texttt{scripts/02\_eda\_descriptive.R}; runtime validation of these R entry points has not been performed.
-The reported numerical validation applies to the Python workflow.
+The R preprocessing entry point is \texttt{scripts/01\_data\_setup.R},
+which implements the procedure described in Chapter~3. It selects five
+variables, applies mean imputation, recomputes aspect ratios, excludes
+missing Local values, and removes repeated combinations on the selected
+variables. The R EDA entry point is
+\texttt{scripts/02\_eda\_descriptive.R}; its outputs are written to
+\texttt{output/eda-r/}.
+
+An independent Python workflow,
+\texttt{scripts/eda\_kaggle\_snapshot.py}, reproduces the preprocessing
+from \texttt{data/raw/add.csv}, exports the five-variable processed CSV,
+and generates the tables and figures in \texttt{output/eda/}.
+The source SHA-256 checksum and preprocessing counts are recorded with
+the outputs. The report uses these verified Python-generated figures.
+The preprocessing execution log records an R run; the integrated
+R EDA implementation has not undergone local runtime validation.

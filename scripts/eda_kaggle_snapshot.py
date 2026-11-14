@@ -1,9 +1,10 @@
-"""Validate the Kaggle CSV, export full processed data, and reproduce EDA."""
+"""Validate the Kaggle CSV, export reference-aligned processed data, and reproduce EDA."""
 import argparse
 import csv
 import hashlib
 import io
 import math
+import shutil
 import statistics as stats
 import zipfile
 from collections import Counter
@@ -14,9 +15,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 
-FIELDS = ("height", "width", "aspect_ratio", "local", "label")
-FULL_FIELDS = FIELDS[:4] + tuple(f"term_{i}" for i in range(4, 1558)) + ("label",)
-LABELS = ("ad", "nonad")
+FIELDS = ("Height", "Width", "Aspect_Ratio", "Local", "IsAds")
+LABELS = ("ad.", "nonad.")
 COLORS = ("#28786d", "#a76423")
 NAMES = ("Height (px)", "Width (px)", "Aspect ratio (width / height)")
 
@@ -38,9 +38,11 @@ def load_processed_rows(source):
                   for x in row[1:5]]
         if any(x is not None and not math.isfinite(x) for x in values):
             raise ValueError(f"Nonfinite feature at observation {index + 1}.")
+        if any(v is not None and v <= 0 for v in values[:2]):
+            raise ValueError(f"Nonpositive geometry at observation {index + 1}.")
         if values[3] not in (None, 0, 1):
             raise ValueError(f"Invalid Local value at observation {index + 1}.")
-        label = {"ad.": "ad", "nonad.": "nonad"}.get(row[-1].strip())
+        label = {"ad.": "ad.", "nonad.": "nonad."}.get(row[-1].strip())
         if label is None:
             raise ValueError(f"Unknown label at observation {index + 1}.")
         terms = [v.strip() for v in row[5:-1]]
@@ -66,23 +68,45 @@ def observed(rows, column):
 
 def export_processed(source, processed, audit_dir):
     rows, sha = load_processed_rows(source)
-    duplicates = len(rows) - len(set(rows))
-    missing = Counter(i for row in rows for i, value in enumerate(row) if value is None)
-    write_csv(processed, FULL_FIELDS, rows)
+    raw_duplicates = len(rows) - len(set(rows))
+    means = [stats.mean(observed(rows, i)) for i in range(2)]
+    selected = []
+    seen = set()
+    audit = []
+    for index, row in enumerate(rows):
+        height = row[0] if row[0] is not None else means[0]
+        width = row[1] if row[1] is not None else means[1]
+        record = (height, width, width / height, row[3], row[-1])
+        if row[3] is None:
+            status = "removed_missing_local"
+        elif record in seen:
+            status = "removed_duplicate_five_columns"
+        else:
+            status = "kept"
+            seen.add(record)
+            selected.append(record)
+        audit.append((index, row[0] is None, row[1] is None, row[3] is None, status))
+    if len(selected) != 1050 or Counter(r[-1] for r in selected) != Counter({"ad.": 93, "nonad.": 957}):
+        raise ValueError("Reference preprocessing counts do not match the validated dataset.")
+    write_csv(processed, FIELDS, selected)
+    write_csv(processed.with_name("row_audit.csv"),
+              ("Raw_Index", "Height_Imputed", "Width_Imputed", "Local_Missing", "Status"), audit)
     write_csv(processed.with_name("data_dictionary.csv"),
-              ("variable", "source_header", "type", "unit", "missing_count", "description"),
-              [(name, str(i), "numeric" if i < 3 else "label" if i == 1558 else "binary",
-                "px" if i < 2 else "", missing[i],
-                {"height": "Image height", "width": "Image width",
-                 "aspect_ratio": "Width divided by height", "local": "Original binary local indicator",
-                 "label": "Advertisement class (ad or nonad)"}.get(name, "Original binary term indicator"))
-               for i, name in enumerate(FULL_FIELDS)])
+              ("Variable_Name", "Raw_Column_Name", "Data_Type", "Unit", "Missing_Before", "Missing_After", "Processing"),
+              [(name, source_header, kind, unit, sum(r[i] is None for r in rows) if i < 4 else 0, 0, treatment)
+               for i, (name, source_header, kind, unit, treatment) in enumerate(zip(
+                   FIELDS, ("0", "1", "2", "3", "1558"),
+                   ("numeric", "numeric", "numeric", "binary", "label"),
+                   ("pixel", "pixel", "dimensionless", "none", "none"),
+                   ("Mean imputation", "Mean imputation", "Recomputed Width/Height",
+                    "Missing rows excluded", "Retain ad./nonad.")))])
     write_csv(audit_dir / "preprocessing_audit.csv", ("metric", "value"),
               [("source_sha256", sha), ("raw_observations", len(rows)),
-               ("raw_columns_including_index", 1560), ("processed_observations", len(rows)),
-               ("processed_columns", len(FULL_FIELDS)), ("missing_cells", sum(missing.values())),
-               ("duplicate_rows_beyond_first_excluding_index", duplicates),
-               ("rows_removed", 0), ("imputed_values", 0)])
+               ("raw_columns_including_index", 1560), ("processed_observations", len(selected)),
+               ("processed_columns", 5), ("missing_cells_before", sum(v is None for r in rows for v in r)),
+               ("missing_cells_after", 0), ("full_record_duplicate_excess", raw_duplicates),
+               ("removed_missing_local", 15), ("removed_duplicate_five_columns", 2214),
+               ("height_imputation_mean", means[0]), ("width_imputation_mean", means[1])])
     return sha
 
 
@@ -118,7 +142,7 @@ def describe_relationships(data, tables, figures):
         ax.set(xlabel=NAMES[i], ylabel=NAMES[j])
         ax.grid(alpha=.15)
     axes[0].legend(fontsize=8)
-    fig.suptitle("Observed geometry pairs by class; complete cases, original scales")
+    fig.suptitle("Processed geometry pairs by class; reference-aligned sample")
     save(fig, figures / "geometry_scatterplots.png")
     audit = []
     for label in (*LABELS, "all"):
@@ -137,7 +161,7 @@ def build(source, processed, output):
     sha = export_processed(source, processed, output / "tables")
     with processed.open(encoding="utf-8", newline="") as file:
         data = [
-            (*[None if row[k] == "NA" else float(row[k]) for k in FIELDS[:4]], row["label"])
+            (*[None if row[k] == "NA" else float(row[k]) for k in FIELDS[:4]], row["IsAds"])
             for row in csv.DictReader(file)
         ]
     groups = {k: [r for r in data if r[-1] == k] for k in LABELS}
@@ -158,7 +182,7 @@ def build(source, processed, output):
                             stats.mean(x), stats.stdev(x), min(x), q1, median, q3,
                             max(x), q3 - q1))
         x = observed(rows, 3)
-        binary.append(("local", label, len(rows), len(x), len(rows) - len(x),
+        binary.append(("Local", label, len(rows), len(x), len(rows) - len(x),
                        x.count(1), x.count(1) / len(x)))
     write_csv(tables / "numeric_summary.csv",
               ("variable", "group", "n_total", "n_valid", "n_missing", "mean", "sd",
@@ -183,7 +207,7 @@ def build(source, processed, output):
         fig, (hist, box) = plt.subplots(1, 2, figsize=(8.5, 3.15), layout="constrained")
         x = observed(data, i)
         hist.hist(x, bins=28, color="#28786d", edgecolor="white", linewidth=.5)
-        hist.set(xlabel=name, ylabel="Observed count", title=f"All observed values (n={len(x):,})")
+        hist.set(xlabel=name, ylabel="Count", title=f"Processed values (n={len(x):,})")
         xs = [observed(groups[k], i) for k in LABELS]
         bp = box.boxplot(xs, patch_artist=True,
                          flierprops={"markersize": 2, "alpha": .35},
@@ -202,18 +226,37 @@ def build(source, processed, output):
     ax.grid(axis="y", alpha=.2)
     save(fig, figures / "binary_001.png")
     describe_relationships(data, tables, figures)
+    fig, axes = plt.subplots(1, 2, figsize=(8.5, 3.3), layout="constrained")
+    for i, ax in enumerate(axes):
+        values = sorted(observed(data, i))
+        theoretical = [stats.NormalDist().inv_cdf((j + .5) / len(values))
+                       for j in range(len(values))]
+        q1, _, q3 = stats.quantiles(values, n=4, method="inclusive")
+        slope = (q3 - q1) / (stats.NormalDist().inv_cdf(.75) - stats.NormalDist().inv_cdf(.25))
+        intercept = q1 - slope * stats.NormalDist().inv_cdf(.25)
+        ax.scatter(theoretical, values, s=9, alpha=.4, color=COLORS[0])
+        ax.plot([theoretical[0], theoretical[-1]],
+                [intercept + slope * theoretical[0], intercept + slope * theoretical[-1]],
+                color=COLORS[1])
+        ax.set(xlabel="Theoretical normal quantile", ylabel=NAMES[i], title=FIELDS[i])
+        ax.grid(alpha=.15)
+    save(fig, figures / "geometry_qq.png")
     write_csv(tables / "figure_index.csv", ("variable", "file"),
               [(v, f"numeric_{i:03}.png") for i, v in enumerate(FIELDS[:3], 1)]
-              + [("local", "binary_001.png"), ("geometry_correlation", "geometry_correlations.png"),
-                 ("geometry_pairs", "geometry_scatterplots.png")])
+              + [("Local", "binary_001.png"), ("geometry_correlation", "geometry_correlations.png"),
+                 ("geometry_pairs", "geometry_scatterplots.png"), ("geometry_qq", "geometry_qq.png")])
     (output / "run_metadata.txt").write_text(
         f"Source: Kaggle uciml/internet-advertisements-data-set / add.csv\n"
         f"Source SHA-256: {sha}\nProcessed input: {processed}\n"
-        "Scope: full processed dataset; descriptive analysis only.\n"
+        "Scope: reference-aligned 1050-row processed dataset; descriptive analysis only.\n"
         f"Rows: {len(data)}; selected: {', '.join(FIELDS)}\n"
-        "No imputation, filtering, deduplication or model fitting.\n"
+        "Preprocessing: mean-impute Height/Width, recompute ratio, drop missing Local, deduplicate five columns. No model fitting.\n"
         "Quartiles: inclusive linear interpolation (R type 7); sample SD: n-1.\n"
         f"Figures: Matplotlib {matplotlib.__version__}\n", encoding="utf-8")
+    report_figures = Path(__file__).resolve().parents[1] / "report/figures/eda"
+    report_figures.mkdir(parents=True, exist_ok=True)
+    for figure in figures.glob("*.png"):
+        shutil.copy2(figure, report_figures / figure.name)
     print(f"EDA snapshot: {len(data)} rows, {len(summary)} numeric summaries; {output}")
 
 
