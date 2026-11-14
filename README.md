@@ -1,6 +1,6 @@
 # BTL Xác suất thống kê — Internet Advertisements
 
-Repository này hiện chỉ là **khung làm việc chung** cho nhóm 5 người. Chưa có dữ liệu được commit, kết quả phân tích, công thức đã chốt, hay nội dung report hoàn chỉnh.
+Repository gồm phần tiền xử lý và EDA đã triển khai trên nhánh hiện tại. Dữ liệu mô tả dùng quy trình mới của Tường, còn 1.050 dòng và 5 biến (93 ad., 957 nonad.). Xem [hướng dẫn tái lập và phạm vi hiện hành](docs/EDA_HANDOFF.md). Các phần suy diễn, đánh giá và kiến thức nền còn cần hoàn thiện.
 
 ## Chuẩn bị trước khi bắt đầu
 
@@ -107,7 +107,7 @@ Hoặc chạy một lần bằng:
 Rscript .\scripts\run_all.R
 ```
 
-Các script hiện là khung rỗng có ghi rõ input/output; vì vậy chưa sinh ra kết quả cho đến khi nhóm bổ sung code.
+Hai script 01 và 02 đã được triển khai; các script suy diễn và đánh giá còn là khung. Hình EDA dùng trong báo cáo đã được commit tại `report/figures/eda/`.
 
 ## Preview section và biên dịch report
 

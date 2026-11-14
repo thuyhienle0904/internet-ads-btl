@@ -176,3 +176,51 @@ run_eda <- function(config, data = NULL) {
   message("EDA outputs written to ", config$output_dir)
   invisible(outputs)
 }
+
+# Descriptive geometry relationships use one common complete-case sample.
+write_geometry_relationships <- function(data, config) {
+  variables <- config$numeric_cols
+  tables <- file.path(config$output_dir, "tables")
+  figures <- file.path(config$output_dir, "figures")
+  complete <- data[complete.cases(data[, variables, drop = FALSE]), , drop = FALSE]
+  correlation <- cor(complete[, variables, drop = FALSE])
+  pairs <- which(upper.tri(correlation, diag = TRUE), arr.ind = TRUE)
+  result <- data.frame(feature_x = variables[pairs[, 1]],
+                       feature_y = variables[pairs[, 2]],
+                       n_complete = nrow(complete), pearson_r = correlation[pairs])
+  write.csv(result, file.path(tables, "geometry_correlations.csv"), row.names = FALSE)
+  write_eda_png(file.path(figures, "geometry_correlations.png"), function() {
+    par(mar = c(7, 7, 3, 2))
+    image(seq_along(variables), seq_along(variables), correlation,
+          zlim = c(-1, 1), col = hcl.colors(101, "Blue-Red 3"), axes = FALSE,
+          xlab = "", ylab = "", main = paste("Pearson r; complete n =", nrow(complete)))
+    axis(1, seq_along(variables), variables, las = 2)
+    axis(2, seq_along(variables), variables, las = 2)
+    for (i in seq_along(variables)) for (j in seq_along(variables)) {
+      text(i, j, sprintf("%.3f", correlation[i, j]))
+    }
+  })
+  write_eda_png(file.path(figures, "geometry_scatterplots.png"), function() {
+    colors <- c("#28786d", "#a76423")
+    pairs(complete[, variables, drop = FALSE], pch = 16, cex = .4,
+          col = adjustcolor(colors[match(complete[[config$label_col]], config$expected_labels)], .35),
+          main = paste("Geometry pairs; complete n =", nrow(complete)))
+    par(xpd = NA)
+    legend("topright", legend = config$expected_labels, col = colors, pch = 16, cex = .7)
+  })
+  audit <- do.call(rbind, lapply(c(config$expected_labels, "all"), function(group) {
+    rows <- if (group == "all") data else data[data[[config$label_col]] == group, , drop = FALSE]
+    do.call(rbind, lapply(variables, function(variable) {
+      x <- rows[[variable]]
+      x <- x[!is.na(x)]
+      q <- quantile(x, c(.25, .75), type = 7, names = FALSE)
+      lower <- q[1] - 1.5 * diff(q)
+      upper <- q[2] + 1.5 * diff(q)
+      count <- sum(x < lower | x > upper)
+      data.frame(variable = variable, group = group, n_valid = length(x),
+                 lower_fence = lower, upper_fence = upper,
+                 n_flagged = count, proportion_flagged = count / length(x))
+    }))
+  }))
+  write.csv(audit, file.path(tables, "outlier_audit.csv"), row.names = FALSE)
+}

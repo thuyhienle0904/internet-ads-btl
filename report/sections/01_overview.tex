@@ -16,8 +16,53 @@ The supplied \texttt{add.csv} contains 3,279 observations and 1,560
 columns, including an exported row index and the target label.
 The 1,558 features consist of three geometric measurements, a binary
 \texttt{local} indicator, and 1,554 other binary indicators.
-The original numeric headers are retained in the data dictionary so
-that every processed column can be traced to its source. Height and
-width are measured in pixels; aspect ratio is width divided by height.
-This historical dataset supports comparisons within the observed
-sample; it does not establish performance on contemporary websites.
+The descriptive analysis retains five variables: Height, Width,
+Aspect\_Ratio, Local, and IsAds. Their original column identifiers
+are recorded in the data dictionary. Height and width are measured in
+pixels; aspect ratio is width divided by height. The reference-aligned
+preprocessing procedure produces 1,050 records, comprising 93
+advertisements and 957 non-advertisements. The descriptive results
+therefore concern this reduced sample. The historical dataset supports
+comparisons within the recorded images; its results have limited
+applicability to contemporary websites.
+
+
+\section{Selected Variables and Class Encoding}
+
+Table~\ref{tab:selected-variables} documents the five variables retained
+for the reference-aligned analysis. Original identifiers refer to column
+headers, which differ from R's one-based column positions because the
+CSV includes an exported index.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Data dictionary for the selected analytical variables.}
+\label{tab:selected-variables}
+\begin{tabular}{@{}llp{0.24\linewidth}p{0.34\linewidth}@{}}
+\toprule
+Source header & Variable & Type and unit & Description\\
+\midrule
+\texttt{0} & Height & Numeric; pixels & Positive image height.\\
+\texttt{1} & Width & Numeric; pixels & Positive image width.\\
+\texttt{2} & Aspect\_Ratio & Numeric; unitless & Width divided by height.\\
+\texttt{3} & Local & Binary; 0 or 1 & Original binary indicator retained under the reference variable name.\\
+\texttt{1558} & IsAds & Categorical & Advertisement (\texttt{ad.}) or non-advertisement (\texttt{nonad.}).\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The CSV header alone provides no detailed semantic definition of Local.
+Its binary encoding is retained without attributing additional meaning
+to the indicator. The omitted binary features remain available in the
+original raw file.
+
+The output CSV preserves the labels \texttt{ad.} and \texttt{nonad.}.
+Within the R preprocessing script, IsAds is represented as a factor
+with these two levels. A numerical representation, when required, uses
+1 for advertisements and 0 for non-advertisements. Factor level indices
+are distinct from this semantic mapping.
+
+The raw records are ordered by class, with 459 advertisements followed
+by 2,820 non-advertisements. A subset consisting only of the first rows
+would therefore fail to represent the full class distribution.

@@ -1,50 +1,235 @@
-% Owner: Tường
+% Owner: Tuong. Integrated from the revised preprocessing handoff.
 \section{Processing Workflow}
 
-The workflow builds on Tuong's original steps: inspect the input,
-standardize column names and missing values, audit repeated rows, and
-export the data with a dictionary. The full Kaggle CSV has a header,
-which is read as column metadata rather than as an observation.
-The original file remains unchanged.
+The preprocessing procedure follows the five-variable branch of the
+reference report. The source CSV contains 3,279 observations and 1,560
+columns, including an exported index. The header was interpreted as
+column metadata, and the index sequence from 0 to 3,278 was validated.
+The selected source columns were 0, 1, 2, 3, and 1558, renamed
+\texttt{Height}, \texttt{Width}, \texttt{Aspect\_Ratio}, \texttt{Local},
+and \texttt{IsAds}. Whitespace was trimmed before missing-value markers
+were converted to \texttt{NA}. The labels \texttt{ad.} and
+\texttt{nonad.} were retained.
+
+The observed means were calculated before row removal:
+\[
+ \bar H_{\mathrm{obs}}=64.02188552188552,\qquad
+ \bar W_{\mathrm{obs}}=155.3448275862069.
+\]
+Missing height and width values were replaced by these respective means.
+All aspect ratios, including previously observed ratios, were recomputed
+as Width/Height. The 15 observations missing Local were then excluded.
+Exact duplicates on the five selected variables, including the label,
+were removed by retaining the first occurrence.
 
 \begin{table}[htbp]
 \centering
 \small
-\caption{Preprocessing decisions for the full Kaggle file.}
+\caption{Stages of reference-aligned preprocessing.}
 \label{tab:preprocessing-decisions}
-\begin{tabular}{@{}p{0.23\linewidth}p{0.37\linewidth}p{0.32\linewidth}@{}}
+\begin{tabular}{lrrr}
 \toprule
-Issue & Treatment & Rationale\\
+Stage & Rows & Selected columns & Missing cells\\
 \midrule
-Exported index & Verify the sequence from 0 to 3,278 and exclude the column. &
-The index is not a measured feature.\\
-Numeric headers & Name the geometry fields and \texttt{local}; preserve the
-source header for each binary indicator in the dictionary. &
-Keep the mapping auditable without guessing term meanings.\\
-Missing values & Trim whitespace and represent missing values as \texttt{NA}. &
-Unknown values must not be counted as zeros.\\
-Target labels & Map only \texttt{ad.} and \texttt{nonad.} to \texttt{ad}
-and \texttt{nonad}. & Unexpected labels are rejected.\\
-Repeated rows & Count exact repeats after excluding the index and retain them. &
-Identical recorded features do not prove two images are the same.\\
+Five-variable selection & 3,279 & 5 & 2,729\\
+Mean imputation and ratio recomputation & 3,279 & 5 & 15\\
+Exclusion of missing Local & 3,264 & 5 & 0\\
+Deduplication on five variables & 1,050 & 5 & 0\\
 \bottomrule
 \end{tabular}
 \end{table}
 
+
+\subsection{Input Validation and Type Conversion}
+
+The CSV is read as character data to preserve missing-value markers
+until explicit normalization. Header and index checks establish that
+subsequent selection refers to the intended source columns.
+
+\begin{lstlisting}[style=edaR]
+raw <- read.csv(
+  "data/raw/add.csv", header = TRUE,
+  check.names = FALSE, colClasses = "character",
+  stringsAsFactors = FALSE, na.strings = NULL
+)
+stopifnot(nrow(raw) == 3279L, ncol(raw) == 1560L)
+stopifnot(identical(names(raw),
+                    c("", as.character(0:1558))))
+stopifnot(identical(raw[[1]], as.character(0:3278)))
+full <- as.data.frame(lapply(raw[-1], trimws),
+                      stringsAsFactors = FALSE)
+names(full) <- as.character(0:1558)
+selected <- full[c("0", "1", "2", "3", "1558")]
+names(selected) <- c("Height", "Width", "Aspect_Ratio",
+                     "Local", "IsAds")
+for (v in names(selected)[1:4]) {
+  text <- selected[[v]]
+  text[text %in% c("?", "")] <- NA_character_
+  number <- suppressWarnings(as.numeric(text))
+  stopifnot(!any(!is.na(text) & is.na(number)))
+  stopifnot(all(is.finite(number[!is.na(number)])))
+  selected[[v]] <- number
+}
+stopifnot(all(selected$IsAds %in% c("ad.", "nonad.")))
+selected$IsAds <- factor(selected$IsAds,
+                         levels = c("ad.", "nonad."))
+\end{lstlisting}
+
+\texttt{trimws} removes surrounding whitespace before marker recognition.
+The conversion checks detect unexpected text and non-finite measurements.
+The full script additionally checks positive observed heights and widths,
+binary Local values, and the expected missing-value counts.
+
+\subsection{Initial Missingness and Record Audit}
+
+\begin{lstlisting}[style=edaR]
+missing_before <- colSums(is.na(selected))
+missing_rows <- sum(!complete.cases(selected))
+full_duplicate_excess <- sum(duplicated(full))
+features <- full[seq_len(1558)]
+conflict_groups <- nrow(unique(full)) -
+                   nrow(unique(features))
+\end{lstlisting}
+
+Column-wise counts measure missing cells, while the complete-case check
+counts affected records once. The audit identifies 920 rows missing at
+least one selected value. The difference between unique feature-and-label
+rows and unique feature vectors counts feature groups associated with
+both labels, since the target has exactly two possible classes.
+Three such groups occur in the original data.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Missing values in the original selected variables.}
+\label{tab:initial-missing}
+\begin{tabular}{lrr}
+\toprule
+Variable & Missing count & Percentage of 3,279 records\\
+\midrule
+Height & 903 & 27.54\%\\
+Width & 901 & 27.48\%\\
+Aspect\_Ratio & 910 & 27.75\%\\
+Local & 15 & 0.46\%\\
+IsAds & 0 & 0.00\%\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Imputation, Ratio Recalculation, and Deduplication}
+
+\begin{lstlisting}[style=edaR]
+mean_height <- mean(selected$Height, na.rm = TRUE)
+mean_width <- mean(selected$Width, na.rm = TRUE)
+data_mean <- selected
+data_mean$Height[is.na(data_mean$Height)] <- mean_height
+data_mean$Width[is.na(data_mean$Width)] <- mean_width
+data_mean$Aspect_Ratio <- data_mean$Width / data_mean$Height
+after_local <- data_mean[!is.na(data_mean$Local), ,
+                          drop = FALSE]
+dup_five <- duplicated(after_local)
+processed <- after_local[!dup_five, , drop = FALSE]
+rownames(processed) <- NULL
+\end{lstlisting}
+
+The means use the original observed values before any rows are removed.
+For comparison, the original medians are 51 px for height and 110 px for
+width. The implemented branch uses the means to reproduce the reference
+preprocessing. Aspect ratio is recalculated for every row after imputation,
+and computations retain full precision before duplicate detection.
+\texttt{duplicated} compares all five columns, including the label,
+and identifies occurrences beyond the first. The Local filter precedes
+this step, leaving 3,264 rows for duplicate detection.
+
 \section{Output and Validation}
 
-The processed CSV contains 3,279 observations and 1,559 columns:
-1,558 features and one label. No rows were dropped. The audit found
-856 repeated feature-and-label rows beyond their first occurrences
-and 2,729 missing cells. Missing counts for height, width, aspect
-ratio, and \texttt{local} are 903, 901, 910, and 15, respectively.
-The missing-cell count differs from the number of affected images
-because an image can have more than one missing feature.
+The resulting \texttt{internet\_ads\_processed.csv} contains 1,050
+observations and five variables, with 93 advertisements and 957
+non-advertisements. The original missing counts were 903 for Height,
+901 for Width, 910 for Aspect\_Ratio, and 15 for Local. All missing
+values in the selected variables were resolved by the stated procedure.
+The final deduplication step excluded 2,214 rows from the 3,264 rows
+remaining after the Local filter.
 
-\texttt{internet\_ads\_processed.csv} is the input for the descriptive
-analysis. Its companion \texttt{data\_dictionary.csv} records the source
-header, type, unit, and missing count of each column.
-No imputation or scaling was applied. Any later transformations that
-estimate parameters from data must be fitted on the training partition
-only. Repeated rows should also be reviewed before splitting the data
-so that potential duplicates do not inflate test performance.
+The data dictionary records source columns, types, units, and processing
+conventions. The row audit records the original index, imputation flags,
+and the retention or removal decision for each source record.
+The supplied processed output was independently reconstructed from the
+raw CSV; all 1,050 rows, 3,279 row-audit decisions, and the delivered
+overall descriptive statistics were verified within floating-point tolerance.
+The original file checksum was also checked.
+
+
+\subsection{Final Checks and Export}
+
+\begin{lstlisting}[style=edaR]
+stopifnot(nrow(after_local) == 3264L)
+stopifnot(sum(dup_five) == 2214L)
+stopifnot(nrow(processed) == 1050L, ncol(processed) == 5L)
+stopifnot(!anyNA(processed), !anyDuplicated(processed))
+stopifnot(sum(processed$IsAds == "ad.") == 93L)
+stopifnot(sum(processed$IsAds == "nonad.") == 957L)
+stopifnot(isTRUE(all.equal(processed$Aspect_Ratio,
+                           processed$Width / processed$Height)))
+write.csv(processed,
+          "data/processed/internet_ads_processed.csv",
+          row.names = FALSE, fileEncoding = "UTF-8")
+\end{lstlisting}
+
+The assertions validate computed results against the reference counts.
+The output contains the calculated records; the checks do not substitute
+fixed values for the data. CSV export preserves textual labels, while
+factor representation is established in R when required after import.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Class counts across preprocessing stages.}
+\label{tab:preprocessing-classes}
+\begin{tabular}{lrrr}
+\toprule
+Stage & Advertisements & Non-advertisements & Total\\
+\midrule
+Original selection & 459 & 2,820 & 3,279\\
+After Local filter & 454 & 2,810 & 3,264\\
+After five-variable deduplication & 93 & 957 & 1,050\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Audit Outputs and Source Integrity}
+
+The preprocessing script exports the processed CSV and dictionary,
+missing-value summaries, imputation values, class frequencies,
+overall descriptive statistics, stage counts, and source metadata.
+The row audit contains an original index, height/width imputation flags,
+a Local-missing flag, and one of three record statuses: retained,
+removed for missing Local, or removed as a repeated five-variable
+combination. These outputs establish a traceable connection between the
+raw records and the analytical sample.
+
+The input-file MD5 checksum is checked before and after preprocessing.
+The verified checksum is
+\texttt{219c13f7f4e98baf15265d458bc5b6b8}.
+The recorded download date, 8 November 2026, is declared source metadata
+and has not been independently verified. The execution timestamp is
+recorded separately. The provided execution log records R version 4.5.0;
+local validation of the integrated implementation is documented in
+Chapter~7.
+
+\section{Methodological Scope}
+
+The 2,214 excluded rows represent repeated combinations of five processed
+variables. A full-record audit of the original features and labels,
+excluding the index, identifies 856 repeated rows beyond first occurrences.
+These two counts use different definitions. Distinct images can have
+identical values on the selected variables, and mean imputation can
+create additional repeated combinations. The reduction also changes the
+advertisement share from 14.00\% to 8.86\%.
+
+This procedure reproduces the reference report's mean-imputed branch.
+It provides the common input for Chapter~4. The reference report's later
+median-imputed modeling branch is separate. Mean imputation from the full
+sample serves the present descriptive replication; predictive evaluation
+requires a training/test design with imputation parameters estimated
+within the training partition.

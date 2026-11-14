@@ -3,6 +3,42 @@
 
 \usepackage{amsmath,amssymb,booktabs,float}
 \usepackage[nameinlink]{cleveref}
+
+% Shared styling for the R implementation excerpts in Chapter 4.
+\usepackage{xcolor,listings}
+\definecolor{edaCodeBackground}{HTML}{F4F7FA}
+\definecolor{edaCodeBorder}{HTML}{C7D5E2}
+\definecolor{edaCodeKeyword}{HTML}{205A97}
+\definecolor{edaCodeString}{HTML}{8C4A22}
+\definecolor{edaCodeComment}{HTML}{387568}
+\definecolor{edaCodeNumber}{HTML}{65758B}
+\lstdefinestyle{edaR}{
+  language=R,
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{edaCodeKeyword}\bfseries,
+  stringstyle=\color{edaCodeString},
+  commentstyle=\color{edaCodeComment}\itshape,
+  backgroundcolor=\color{edaCodeBackground},
+  rulecolor=\color{edaCodeBorder},
+  frame=single,
+  frameround=tttt,
+  framesep=7pt,
+  framerule=0.5pt,
+  numbers=left,
+  numberstyle=\tiny\color{edaCodeNumber},
+  numbersep=10pt,
+  xleftmargin=22pt,
+  xrightmargin=8pt,
+  breaklines=true,
+  breakatwhitespace=false,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  tabsize=2,
+  aboveskip=10pt,
+  belowskip=12pt
+}
+
 \graphicspath{{../output/figures/}}
 
 \reporttype{Course Project Report}
