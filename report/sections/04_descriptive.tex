@@ -39,13 +39,15 @@ stopifnot(all(data$label %in% labels))
 
 The following R excerpts illustrate the calculations used in
 \texttt{scripts/02\_eda\_descriptive.R} and its helper functions.
-Run the excerpts in order from the repository root. The processed input
+The excerpts share an execution context rooted in the repository directory.
+The processed input
 already contains standardized names and labels. The checks confirm the
 expected number of observations and class encoding before summarization.
 The numerical results and embedded figures were generated and verified
 using \texttt{scripts/eda\_kaggle\_snapshot.py}. The R implementation
-uses the same statistical definitions; runtime verification of R remains
-pending. Figure styling can differ between the two implementations.
+uses the same statistical definitions. The reported validation covers the
+Python workflow; the R implementation has not undergone runtime validation.
+The two implementations use different figure layouts and styling.
 
 \section{Class Distribution and Missing Data}
 
@@ -92,9 +94,9 @@ Total          & 3,279 & 100.00\% & 910 & 27.75\%\\
 
 There are about 6.14 non-advertisements for every advertisement in this
 sample. Always predicting \texttt{nonad} would yield about 86\% accuracy on
-this dataset while detecting none of the advertisements. Model evaluation
-should therefore report a confusion matrix and recall for the \texttt{ad}
-class on a held-out test set. Missing geometric features are more common
+this dataset while detecting none of the advertisements. This class imbalance makes accuracy alone insufficient for assessing
+advertisement detection. A confusion matrix and recall for the
+\texttt{ad} class on a held-out test set provide complementary measures. Missing geometric features are more common
 in the \texttt{nonad} class, so summaries based on observed values may not
 represent all images in each class.
 
@@ -212,7 +214,7 @@ IQR & 60.25 & 104 & 4.2976\\
 \end{table}
 
 All three overall means exceed their medians, consistent with the right
- tails visible in the histograms. Width has substantial spread (SD 130.03 px),
+tails visible in the histograms. Width has substantial spread (SD 130.03 px),
 while aspect ratio ranges from 0.0015 to 60. The overall statistics pool
 classes with different distributions, so the preceding class-specific
 summaries remain necessary for interpretation.
@@ -270,8 +272,8 @@ association (\(r=0.536\)). Aspect ratio is defined from width and height,
 so these relationships partly reflect its mathematical construction.
 The correlations pool both classes and do not establish causation or
 predictive performance. The scatterplots also show class overlap and
-concentrations at recurring image dimensions. Model specifications
-using both the ratio and its components should be assessed on training data.
+concentrations at recurring image dimensions. The mathematical dependence between the ratio and its components is
+relevant to subsequent model specification and assessment on training data.
 
 \section{Extreme Values and Interpretation}
 
@@ -337,10 +339,11 @@ interpreting apparent extremes.
 
 All observations are retained. Large dimensions and extreme ratios can
 represent genuine image formats; mean and SD may be influenced by their
-magnitudes, so median and IQR are reported alongside them. Any later
-exclusion or transformation needs a documented rationale and a sensitivity
-analysis. Rules estimated for modeling should be fitted on the training
-partition, with evaluation on a held-out set.
+magnitudes, so median and IQR are reported alongside them. Exclusion or transformation of these values can alter class-specific
+distributions. A documented rationale and sensitivity analysis are therefore
+necessary for interpreting the effects of such choices. Estimating
+transformation parameters within the training partition supports independent
+evaluation on a held-out set.
 
 \section{Binary Feature and Limitations}
 
@@ -371,6 +374,6 @@ the full feature set.
 
 Width and aspect ratio are candidates for further analysis. The
 differences reported here are descriptive; no hypothesis tests were
-performed. Any feature selection should be repeated on the agreed
-training set. Keep the test set separate and estimate imputation rules
-using the training data only.
+performed. These full-dataset summaries provide exploratory context. Feature selection
+and estimation of imputation parameters belong within the training
+partition, with the test partition reserved for independent evaluation.
