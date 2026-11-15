@@ -4,7 +4,6 @@ import csv
 import hashlib
 import io
 import math
-import shutil
 import statistics as stats
 import zipfile
 from collections import Counter
@@ -253,10 +252,6 @@ def build(source, processed, output):
         "Preprocessing: mean-impute Height/Width, recompute ratio, drop missing Local, deduplicate five columns. No model fitting.\n"
         "Quartiles: inclusive linear interpolation (R type 7); sample SD: n-1.\n"
         f"Figures: Matplotlib {matplotlib.__version__}\n", encoding="utf-8")
-    report_figures = Path(__file__).resolve().parents[1] / "report/figures/eda"
-    report_figures.mkdir(parents=True, exist_ok=True)
-    for figure in figures.glob("*.png"):
-        shutil.copy2(figure, report_figures / figure.name)
     print(f"EDA snapshot: {len(data)} rows, {len(summary)} numeric summaries; {output}")
 
 
