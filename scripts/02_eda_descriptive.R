@@ -26,3 +26,24 @@ write_eda_png(file.path(eda_config$output_dir, "figures", "geometry_qq.png"), fu
     qqline(processed[[variable]], col = "#a76423")
   }
 })
+
+# Publish only the complete set of figures from this successful R run.
+figure_files <- c("class_distribution.png", sprintf("numeric_%03d.png", 1:3),
+                  "binary_001.png", "geometry_correlations.png",
+                  "geometry_scatterplots.png", "geometry_qq.png")
+figure_sources <- file.path(eda_config$output_dir, "figures", figure_files)
+if (!all(file.exists(figure_sources))) stop("Incomplete R figure set.")
+report_figures <- "report/figures/eda"
+dir.create(report_figures, recursive = TRUE, showWarnings = FALSE)
+if (!all(file.copy(figure_sources, report_figures, overwrite = TRUE))) {
+  stop("Could not publish all R figures to the report.")
+}
+figure_index <- data.frame(
+  variable = c("IsAds", eda_config$numeric_cols, "Local",
+               "geometry_correlation", "geometry_pairs", "geometry_qq"),
+  file = figure_files
+)
+write.csv(figure_index,
+          file.path(eda_config$output_dir, "tables", "figure_index.csv"),
+          row.names = FALSE)
+message("Published eight R figures to ", report_figures)
