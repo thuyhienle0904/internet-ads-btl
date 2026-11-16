@@ -16,21 +16,17 @@ The supplied \texttt{add.csv} contains 3,279 observations and 1,560
 columns, including an exported row index and the target label.
 The 1,558 features consist of three geometric measurements, a binary
 \texttt{local} indicator, and 1,554 other binary indicators.
-The descriptive analysis retains five variables: Height, Width,
-Aspect\_Ratio, Local, and IsAds. Their original column identifiers
-are recorded in the data dictionary. Height and width are measured in
-pixels; aspect ratio is width divided by height. The reference-aligned
-preprocessing procedure produces 1,050 records, comprising 93
-advertisements and 957 non-advertisements. The descriptive results
-therefore concern this reduced sample. The historical dataset supports
-comparisons within the recorded images; its results have limited
-applicability to contemporary websites.
-
+The processed dataset retains all 1,558 features and contains 2,423 records,
+including 386 advertisements and 2,037 non-advertisements.
+Its 1,561 columns include the original index as \texttt{row\_id},
+the class label, and the derived \texttt{missing\_size} flag.
+The descriptive analysis focuses on the geometric variables, Local,
+and missingness by class.
 
 \section{Selected Variables and Class Encoding}
 
 Table~\ref{tab:selected-variables} documents the five variables retained
-for the reference-aligned analysis. Original identifiers refer to column
+for the descriptive analysis. Original identifiers refer to column
 headers, which differ from R's one-based column positions because the
 CSV includes an exported index.
 
@@ -54,8 +50,7 @@ Source header & Variable & Type and unit & Description\\
 
 The CSV header alone provides no detailed semantic definition of Local.
 Its binary encoding is retained without attributing additional meaning
-to the indicator. The omitted binary features remain available in the
-original raw file.
+to the indicator. The remaining binary features are preserved in the processed file.
 
 The output CSV preserves the labels \texttt{ad.} and \texttt{nonad.}.
 Within the R preprocessing script, IsAds is represented as a factor

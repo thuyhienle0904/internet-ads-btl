@@ -259,7 +259,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", type=Path, help="Original Kaggle add.csv or ZIP")
     parser.add_argument("--processed", type=Path,
-                        default=Path("data/processed/internet_ads_processed.csv"))
-    parser.add_argument("--output", type=Path, default=Path("output/eda"))
+                        default=Path("output/eda-legacy/data/internet_ads_processed.csv"))
+    parser.add_argument("--output", type=Path, default=Path("output/eda-legacy"))
     args = parser.parse_args()
     build(args.source, args.processed, args.output)
