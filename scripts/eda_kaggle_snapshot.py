@@ -16,9 +16,8 @@ import matplotlib.pyplot as plt
 
 DATASET_HANDLE = "uciml/internet-advertisements-data-set"
 DATASET_FILE_PATH = "add.csv"
-FIELDS = ("height", "width", "aspect_ratio", "local", "label")
-FULL_FIELDS = FIELDS[:4] + tuple(f"term_{i}" for i in range(4, 1558)) + ("label",)
-LABELS = ("ad", "nonad")
+FIELDS = ("Height", "Width", "Aspect_Ratio", "Local", "IsAds")
+LABELS = ("ad.", "nonad.")
 COLORS = ("#28786d", "#a76423")
 NAMES = ("Height (px)", "Width (px)", "Aspect ratio (width / height)")
 

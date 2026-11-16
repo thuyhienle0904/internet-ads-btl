@@ -12,13 +12,11 @@ This supersedes the earlier 3,279-row EDA and its lowercase field names. The cur
 
 Place the original Kaggle `add.csv` in `data/raw/`. From the repository root, the Python route is
 
-<<<<<<< HEAD
 ```bash
 python3 scripts/eda_kaggle_snapshot.py
 ```
 
 When `data/raw/add.csv` is absent, the script downloads the latest `add.csv` from Kaggle automatically. Use `--download` to refresh it. The script also accepts the original Kaggle ZIP. It validates the schema, writes the full processed CSV and dictionary under `data/processed/`, then reads that CSV to generate EDA. The source SHA-256 and audit counts are recorded in `output/eda/tables/preprocessing_audit.csv`. Rerunning replaces these generated outputs.
-=======
 ```sh
 python3 -m venv .venv
 .venv/bin/python -m pip install matplotlib
@@ -26,7 +24,6 @@ python3 -m venv .venv
 ```
 
 The script validates the full raw schema and index, exports the reference-aligned processed CSV, dictionary and row audit, then reads the CSV for EDA. The audit records source SHA-256 and processing counts. Running it replaces the generated CSV and report figures with the 1,050-row version. It also accepts the original Kaggle ZIP.
->>>>>>> origin/bach/eda-descriptive
 
 The R route is
 
