@@ -1,6 +1,6 @@
 # BTL Xác suất thống kê — Internet Advertisements
 
-Repository gồm phần tiền xử lý và EDA đã triển khai trên nhánh hiện tại. Dữ liệu mô tả dùng quy trình mới của Tường, còn 1.050 dòng và 5 biến (93 ad., 957 nonad.). Xem [hướng dẫn tái lập và phạm vi hiện hành](docs/EDA_HANDOFF.md). Các phần suy diễn, đánh giá và kiến thức nền còn cần hoàn thiện.
+Repository gồm phần tiền xử lý và EDA đã triển khai trên nhánh hiện tại. Dữ liệu mô tả dùng quy trình mới của Tường, gồm 2.423 dòng và 1.561 cột (386 ad., 2.037 nonad.), giữ các giá trị thiếu. Xem [hướng dẫn tái lập và phạm vi hiện hành](docs/EDA_HANDOFF.md). Các phần suy diễn, đánh giá và kiến thức nền còn cần hoàn thiện.
 
 ## Chuẩn bị trước khi bắt đầu
 
