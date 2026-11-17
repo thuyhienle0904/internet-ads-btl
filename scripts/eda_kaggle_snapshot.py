@@ -291,8 +291,8 @@ if __name__ == "__main__":
     parser.add_argument("--download", action="store_true",
                         help="Download the latest Kaggle add.csv before running the analysis")
     parser.add_argument("--processed", type=Path,
-                        default=Path("data/processed/internet_ads_processed.csv"))
-    parser.add_argument("--output", type=Path, default=Path("output/eda"))
+                        default=Path("output/eda-legacy/data/internet_ads_processed.csv"))
+    parser.add_argument("--output", type=Path, default=Path("output/eda-legacy"))
     args = parser.parse_args()
     if args.download or not args.source.exists():
         if args.source.suffix.lower() != ".csv":
