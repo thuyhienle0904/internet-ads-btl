@@ -283,6 +283,43 @@ binary_summary <- summarize_binary(
 print(binary_summary[binary_summary$group != "all", ])
 \end{lstlisting}
 
+\section{Binary Indicators by Class}
+
+We screened the 1,554 binary indicators named \texttt{term\_*}.
+For each indicator, we divided the number of observations encoded as 1
+by the number with a recorded value within each class.
+Table~\ref{tab:eda-terms} shows the three largest absolute differences in
+these rates. A positive gap indicates a higher rate among advertisements.
+The suffix of each term identifier is its original Kaggle column number.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Binary indicators with the largest absolute differences in class rates.}
+\label{tab:eda-terms}
+\begin{tabular}{lrrr}
+\toprule
+Indicator & Ad: count (rate) & Nonad: count (rate) & Gap (pp)\\
+\midrule
+\texttt{term\_1243} & 167 (43.26\%) & 12 (0.59\%) & 42.68\\
+\texttt{term\_0351} & 123 (31.87\%) & 6 (0.29\%) & 31.57\\
+\texttt{term\_1399} & 111 (28.76\%) & 5 (0.25\%) & 28.51\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For all three indicators, rates use 386 ads and 2,037 nonads.
+Gaps are calculated before rounding.
+When \texttt{term\_1243} is present, 167 of 179 records
+(93.30\%) are ads. It is absent in 219 of 386 ads, so relying on
+this indicator alone would miss more than half of the ads.
+
+The rates describe the sample used to rank the indicators.
+For model development, rank features on the training data and assess
+performance on held-out data. The processed dictionary lists the
+column identifiers, while the original wording of the indicators
+is unavailable in the processed file.
+
 The results describe the deduplicated dataset and, for measured
 variables, the subsets with observed measurements. Differences in
 missingness between classes limit how directly those subsets represent
