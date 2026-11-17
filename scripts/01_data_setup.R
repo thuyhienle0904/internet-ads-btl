@@ -73,7 +73,7 @@ main <- function() {
   parsed <- as.data.frame(lapply(retained[seq_len(1558)], parse_number),
                           stringsAsFactors = FALSE)
   feature_names <- c("Height", "Width", "Aspect_Ratio", "Local",
-                     sprintf("Feature_%04d", 4:1557))
+                     sprintf("term_%04d", 4:1557))
   names(parsed) <- feature_names
   stopifnot(all(vapply(parsed[4:1558], function(v) {
     all(is.na(v) | v %in% c(0, 1))
