@@ -15,35 +15,8 @@ eda_config <- list(
 )
 
 processed <- read.csv(eda_config$input_file, check.names = FALSE, na.strings = c("", "NA"))
-# Normalize headers in earlier v2 exports.
-names(processed) <- sub("^Feature_([0-9]+)$", "term_\\1", names(processed))
-if (anyDuplicated(names(processed))) stop("Duplicate columns after term renaming.")
 stopifnot("missing_size" %in% names(processed))
 run_eda(eda_config, processed)
-
-# Compare binary indicators using observed values within each class.
-term_columns <- grep("^term_[0-9]+$", names(processed), value = TRUE)
-if (length(term_columns)) {
-  terms <- summarize_binary(
-    processed, term_columns, eda_config$label_col, eda_config$expected_labels
-  )
-  ads <- terms[terms$group == eda_config$expected_labels[1], ]
-  nonads <- terms[terms$group == eda_config$expected_labels[2], ]
-  term_comparison <- data.frame(
-    variable = ads$variable,
-    ad_observed = ads$n_valid,
-    ad_present = ads$n_one,
-    ad_rate = ads$proportion_one,
-    nonad_observed = nonads$n_valid,
-    nonad_present = nonads$n_one,
-    nonad_rate = nonads$proportion_one
-  )
-  term_comparison$gap_pp <- 100 * (term_comparison$ad_rate - term_comparison$nonad_rate)
-  rank <- order(-abs(term_comparison$gap_pp), term_comparison$variable)
-  write.csv(term_comparison[rank, ],
-            file.path(eda_config$output_dir, "tables", "term_comparison.csv"),
-            row.names = FALSE)
-}
 write_geometry_relationships(processed, eda_config)
 
 write_eda_png(file.path(eda_config$output_dir, "figures", "geometry_qq.png"), function() {
@@ -77,3 +50,4 @@ write.csv(figure_index,
           file.path(eda_config$output_dir, "tables", "figure_index.csv"),
           row.names = FALSE)
 message("Published ", length(figure_files), " R figures to ", report_figures)
+source("scripts/eda_terms.R")

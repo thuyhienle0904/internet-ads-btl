@@ -275,7 +275,6 @@ advertisements (77.86\%) and 1,455 of 2,028 non-advertisements
 
 \edageometryfigure{binary_001.png}{Proportion of observed Local values equal to 1 by class.}{fig:eda-local}
 
-\newpage
 \begin{lstlisting}[style=edaR]
 binary_summary <- summarize_binary(
   data, "Local", "IsAds", labels
@@ -283,23 +282,38 @@ binary_summary <- summarize_binary(
 print(binary_summary[binary_summary$group != "all", ])
 \end{lstlisting}
 
-\section{Binary Indicators by Class}
+\section{Anonymous Term Indicators}
+The processed dataset also contains 1,554 binary term indicators,
+\texttt{term\_0004} through \texttt{term\_1557}. Each suffix is the
+original Kaggle column number. The indicators are unnamed flags, so
+their semantic meaning cannot be inferred from the dataset.
+Only 29,485 of their 3,765,342 cells are one (density 0.783\%).
+The median record has 17 active terms in the Ad class and 9 in the
+Non-Ad class; the respective means are 19.92 and 10.70.
+These counts refer to indicator columns: only 760 distinct 0/1 patterns
+occur among the 1,554 columns, so multiple columns can mark the same
+set of records. This does not identify the underlying words.
 
-We screened the 1,554 binary indicators named \texttt{term\_*}.
-For each indicator, we divided the number of observations encoded as 1
-by the number with a recorded value within each class.
-Table~\ref{tab:eda-terms} shows the three largest absolute differences in
-these rates. A positive gap indicates a higher rate among advertisements.
-The suffix of each term identifier is its original Kaggle column number.
+\edageometryfigure{term_count_by_class.png}{Distribution of active term indicators per record by class.}{fig:eda-term-counts}
+
+For each term, we count records with value one and divide by the number
+of records in each class (386 Ad and 2,037 Non-Ad). To avoid ranking
+extremely rare terms, the
+displayed contrasts require at least 20 records with the term present.
+This excludes 1,231 rarer indicators from the displayed ranking.
+Among 323 eligible terms (232 distinct 0/1 patterns), the six largest
+absolute differences in class prevalence are shown below; the table in
+\texttt{output/eda-r/tables/} lists the top ten. A positive difference
+means the term occurs more often among Ad records.
 
 \begin{table}[H]
 \centering
 \small
-\caption{Binary indicators with the largest absolute differences in class rates.}
+\caption{Three largest class-prevalence differences; gaps use unrounded rates.}
 \label{tab:eda-terms}
 \begin{tabular}{lrrr}
 \toprule
-Indicator & Ad: count (rate) & Nonad: count (rate) & Gap (pp)\\
+Term & Ad: count (rate) & Non-Ad: count (rate) & Gap (pp)\\
 \midrule
 \texttt{term\_1243} & 167 (43.26\%) & 12 (0.59\%) & 42.68\\
 \texttt{term\_0351} & 123 (31.87\%) & 6 (0.29\%) & 31.57\\
@@ -308,17 +322,20 @@ Indicator & Ad: count (rate) & Nonad: count (rate) & Gap (pp)\\
 \end{tabular}
 \end{table}
 
-For all three indicators, rates use 386 ads and 2,037 nonads.
-Gaps are calculated before rounding.
-When \texttt{term\_1243} is present, 167 of 179 records
-(93.30\%) are ads. It is absent in 219 of 386 ads, so relying on
-this indicator alone would miss more than half of the ads.
+\edageometryfigure{term_class_prevalence.png}{Six terms with the largest Ad versus Non-Ad prevalence differences among indicators with support of at least 20.}{fig:eda-terms}
 
-The rates describe the sample used to rank the indicators.
-For model development, rank features on the training data and assess
-performance on held-out data. The processed dictionary lists the
-column identifiers, while the original wording of the indicators
-is unavailable in the processed file.
+When \texttt{term\_1243} is present, 167 of 179 records (93.30\%)
+are Ad. It is absent in 219 of 386 Ad records, so this term alone
+would miss more than half of them. The largest contrast in the other
+direction among eligible indicators is \texttt{term\_0548}, whose Ad minus
+Non-Ad prevalence difference is -15.69 percentage points. The six
+largest absolute contrasts happen to favor Ad; the figure does not
+display the strongest Non-Ad-associated indicator. These are
+exploratory associations, not evidence that a term causes an image
+to be an advertisement. The complete 1,554-term table and per-record
+term counts are generated in \texttt{output/eda-r/tables/}.
+Any term selection for predictive modeling must be repeated using
+training data only, inside each validation fold.
 
 The results describe the deduplicated dataset and, for measured
 variables, the subsets with observed measurements. Differences in

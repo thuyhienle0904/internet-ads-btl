@@ -2,6 +2,14 @@
 
 Repository gồm phần tiền xử lý và EDA đã triển khai trên nhánh hiện tại. Dữ liệu mô tả dùng quy trình mới của Tường, gồm 2.423 dòng và 1.561 cột (386 ad., 2.037 nonad.), giữ các giá trị thiếu. Xem [hướng dẫn tái lập và phạm vi hiện hành](docs/EDA_HANDOFF.md). Các phần suy diễn, đánh giá và kiến thức nền còn cần hoàn thiện.
 
+Phân tích suy diễn chỉ đọc `data/processed/internet_ads_processed.csv` và tạo split theo nhóm trực tiếp từ file này. Chạy `Rscript scripts/03_inference_model.R` rồi `Rscript scripts/04_evaluation.R --min-precision=0.70`. Manifest của split, bảng kiểm định, Odds Ratio, dự đoán và kết quả test được tạo trong `output/inference/`; phần diễn giải nằm ở `report/sections/05_inference.tex`. Ngưỡng Precision được chọn trên dự đoán ngoài fold của tập train và có thể không đạt lại trên test.
+
+Chạy tiếp `Rscript scripts/05_inference_visuals.R` để tạo năm hình PNG trong `output/inference/figures/` (missingness, Odds Ratio, một hình Precision–Recall gồm cả hai phép so sánh, và hai confusion matrix) cùng sáu bảng CSV trong `output/inference/tables/`. Script này chỉ dùng các kết quả do bước 03–04 xuất ra, kiểm tra dữ liệu processed chưa thay đổi và chép hình sang `report/figures/inference/`.
+
+EDA của 1.554 cột term chạy trong `scripts/02_eda_descriptive.R`. Có thể chạy riêng `Rscript scripts/eda_terms.R` để cập nhật bảng độ thưa, tỷ lệ xuất hiện theo lớp và hai hình term mà không tạo lại các hình geometry.
+
+Các kiểm định chi-square và mô hình logistic cho term chạy cùng `scripts/03_inference_model.R`; ablation trên test chạy cùng `scripts/04_evaluation.R`. Kết quả nằm trong `output/inference/term_*.csv`; diễn giải nằm trong `report/sections/05_inference.tex`.
+
 ## Chuẩn bị trước khi bắt đầu
 
 Mỗi thành viên cần chuẩn bị các công cụ sau trên máy Windows của mình.

@@ -14,13 +14,18 @@ From the repository root:
 Rscript scripts/01_data_setup.R
 Rscript tests/test_eda.R
 Rscript scripts/02_eda_descriptive.R
+Rscript tests/test_eda_terms.R
 ```
 
 Preprocessing writes the CSV and audit tables to `data/processed/` and its log
 to `output/preprocessing/`. EDA writes tables and figures to `output/eda-r/`
-and copies the nine report figures to `report/figures/eda/`. Univariate
+and copies the eleven report figures to `report/figures/eda/`. Univariate
 summaries use observed values per feature. Pearson correlations and
 geometry scatterplots use 1,931 complete geometry records.
+Term results include per-record counts, all-column prevalence, and a
+support-filtered class contrast ranking. The overview also records how many
+columns have identical observed 0/1 patterns; this does not reveal their
+unknown semantic meaning.
 
 `scripts/eda_kaggle_snapshot.py` reproduces the historical 1,050-row workflow.
 Its default outputs are isolated under `output/eda-legacy/`. Use the R
@@ -31,7 +36,7 @@ workflow above to regenerate the v2 report.
 Among the 1,554 binary indicators, `term_1243` had the largest absolute
 difference in observed rates between classes. It occurred in 167 of 386 ads
 (43.26%) and 12 of 2,037 nonads (0.59%). This makes it a candidate for further
-evaluation, although it was absent in 219 of 386 ads. The full screening table
-is written to `output/eda-r/tables/term_comparison.csv`. For model feature
+evaluation, although it was absent in 219 of 386 ads. The full term table
+is written to `output/eda-r/tables/term_prevalence_all.csv`. For model term
 selection, repeat the screening within training data and evaluate on held-out
 data.
