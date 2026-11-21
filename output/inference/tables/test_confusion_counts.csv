@@ -1,0 +1,9 @@
+"model","actual","predicted","count"
+"main","Ad","Ad",42
+"main","Ad","Non-Ad",35
+"main","Non-Ad","Ad",22
+"main","Non-Ad","Non-Ad",386
+"format_interaction","Ad","Ad",45
+"format_interaction","Ad","Non-Ad",32
+"format_interaction","Non-Ad","Ad",21
+"format_interaction","Non-Ad","Non-Ad",387

@@ -30,6 +30,36 @@ main <- function() {
     write.csv(x, file.path("data/processed", filename), row.names = FALSE,
               na = "NA", fileEncoding = "UTF-8")
   }
+  save_duplicate_group_figure <- function(group_size_summary, label_summary) {
+    figure_dir <- "output/preprocessing/figures"
+    dir.create(figure_dir, recursive = TRUE, showWarnings = FALSE)
+    figure_file <- file.path(figure_dir, "duplicate_group_audit.png")
+    png(figure_file, width = 1800, height = 900, res = 180)
+    on.exit(dev.off(), add = TRUE)
+    old_par <- par(no.readonly = TRUE)
+    on.exit(par(old_par), add = TRUE)
+    par(mfrow = c(1, 2), mar = c(5, 5, 4.5, 1))
+
+    group_labels <- as.character(group_size_summary$Group_Size)
+    barplot(group_size_summary$Group_Count, names.arg = group_labels,
+      col = "#4C78A8", border = NA, las = 2,
+      xlab = "Records in an exact duplicate group",
+      ylab = "Number of duplicate groups",
+      main = "A. Size of duplicate groups")
+    mtext(sprintf("%d groups; %d raw records involved",
+                  sum(group_size_summary$Group_Count),
+                  sum(group_size_summary$Records_In_Groups)),
+          side = 3, line = 0.4, cex = 0.8)
+
+    barplot(label_summary$Rows_Removed, names.arg = label_summary$Label,
+      col = c("#E45756", "#54A24B"), border = NA,
+      ylab = "Redundant rows removed",
+      main = "B. Removed rows by class")
+    text(seq_along(label_summary$Rows_Removed), label_summary$Rows_Removed,
+         labels = label_summary$Rows_Removed, pos = 3, cex = 0.9)
+    mtext(sprintf("%d redundant rows removed", sum(label_summary$Rows_Removed)),
+          side = 3, line = 0.4, cex = 0.8)
+  }
   cat("INTERNET ADVERTISEMENTS - V2: KEEP FEATURES AND MISSINGNESS\n")
   cat("Runtime:", R.version.string, "\n\n")
 
@@ -61,6 +91,62 @@ main <- function() {
     Missing_Three_Size_Features = as.integer(rowSums(raw_missing[, 1:3]) > 0),
     Status = ifelse(duplicate, "removed_duplicate_full_record", "kept"))
   save_csv(row_audit, "row_audit.csv")
+
+  # Audit the exact duplicate groups themselves. The separator cannot occur in
+  # this numeric/binary source data, so each key represents all features + label.
+  stopifnot(!any(grepl("\r", unlist(original, use.names = FALSE), fixed = TRUE)))
+  full_record_key <- do.call(paste, c(original, sep = "\r"))
+  key_counts <- table(full_record_key)
+  duplicate_keys <- names(key_counts)[key_counts > 1L]
+  first_positions <- match(duplicate_keys, full_record_key)
+  group_sizes <- as.integer(key_counts[duplicate_keys])
+  duplicate_groups <- data.frame(
+    Group_ID = sprintf("DG%03d", seq_along(duplicate_keys)),
+    Label = original[["1558"]][first_positions],
+    Group_Size = group_sizes,
+    Rows_Removed = group_sizes - 1L,
+    Retained_Raw_Index = raw_index[first_positions],
+    Member_Raw_Indices = vapply(duplicate_keys, function(key) {
+      paste(raw_index[full_record_key == key], collapse = ";")
+    }, character(1)),
+    stringsAsFactors = FALSE)
+  duplicate_groups <- duplicate_groups[order(-duplicate_groups$Group_Size,
+                                               duplicate_groups$Label,
+                                               duplicate_groups$Retained_Raw_Index), ]
+  rownames(duplicate_groups) <- NULL
+  duplicate_groups$Group_ID <- sprintf("DG%03d", seq_len(nrow(duplicate_groups)))
+  save_csv(duplicate_groups, "duplicate_group_audit.csv")
+  group_size_summary <- as.data.frame(table(Group_Size = duplicate_groups$Group_Size),
+                                      stringsAsFactors = FALSE)
+  group_size_summary$Group_Size <- as.integer(as.character(group_size_summary$Group_Size))
+  group_size_summary <- group_size_summary[order(group_size_summary$Group_Size), ]
+  names(group_size_summary)[2] <- "Group_Count"
+  group_size_summary$Records_In_Groups <- with(group_size_summary,
+    Group_Size * Group_Count)
+  group_size_summary$Rows_Removed <- with(group_size_summary,
+    (Group_Size - 1L) * Group_Count)
+  save_csv(group_size_summary, "duplicate_group_size_summary.csv")
+  label_summary <- data.frame(Label = c("ad.", "nonad."),
+    Duplicate_Groups = vapply(c("ad.", "nonad."), function(label) {
+      sum(duplicate_groups$Label == label)
+    }, integer(1)),
+    Records_In_Groups = vapply(c("ad.", "nonad."), function(label) {
+      sum(duplicate_groups$Group_Size[duplicate_groups$Label == label])
+    }, integer(1)),
+    Rows_Removed = vapply(c("ad.", "nonad."), function(label) {
+      sum(duplicate_groups$Rows_Removed[duplicate_groups$Label == label])
+    }, integer(1)))
+  save_csv(label_summary, "duplicate_group_label_summary.csv")
+  stopifnot(nrow(duplicate_groups) == 277L, sum(duplicate_groups$Rows_Removed) == 856L,
+            sum(duplicate_groups$Group_Size) == 1133L,
+            identical(sum(duplicate_groups$Rows_Removed), sum(duplicate)))
+  save_duplicate_group_figure(group_size_summary, label_summary)
+  report_figure_dir <- "report/figures/preprocessing"
+  dir.create(report_figure_dir, recursive = TRUE, showWarnings = FALSE)
+  if (!file.copy("output/preprocessing/figures/duplicate_group_audit.png",
+                 report_figure_dir, overwrite = TRUE)) {
+    stop("Could not publish duplicate-group figure to the report.")
+  }
 
   # 3. Convert '?' to R NA, and parse numbers WITHOUT imputing any value.
   parse_number <- function(text) {
@@ -188,6 +274,8 @@ main <- function() {
 
   # 5. Report macros, raw integrity, and exported-file checks.
   macros <- c(NRaw=nrow(raw),NFileColumns=ncol(raw),NDuplicatesRemoved=sum(duplicate),
+    NDuplicateGroups=nrow(duplicate_groups),
+    NRecordsInDuplicateGroups=sum(duplicate_groups$Group_Size),
     NProcessed=nrow(processed),NOutputColumns=ncol(processed),
     NAdsRaw=sum(original[["1558"]]=="ad."),
     NNonadsRaw=sum(original[["1558"]]=="nonad."),
