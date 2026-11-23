@@ -105,11 +105,18 @@ main <- function() {
     "Chiều cao ảnh", "Chiều rộng ảnh", "Tỷ lệ Width/Height gốc, giữ nguyên",
     "Chỉ báo nhị phân Local; giữ giá trị và NA gốc",
     paste0("Đặc trưng nhị phân gốc cột ", 4:1557,
-           "; CSV không kèm tên/ngữ nghĩa từ khóa chi tiết"),
+           "; tên gốc UCI ghi trong Original_UCI_Name"),
     "Nhãn: ad. là quảng cáo; nonad. là không quảng cáo",
     "1 nếu bất kỳ đặc trưng gốc nào thiếu, kể cả Local; 0 nếu đủ toàn bộ")
   types <- c("integer", rep("numeric", 1558), "factor", "integer_binary")
+  uci_names <- read.csv("docs/uci_feature_names.csv",
+                        colClasses = "character", check.names = FALSE)
+  stopifnot(nrow(uci_names) == 1558L,
+            identical(uci_names$Raw_Column_Name, as.character(0:1557)),
+            !anyNA(uci_names$Original_UCI_Name))
   dictionary <- data.frame(Variable_Name = names(processed),
+    Original_UCI_Name = c(NA_character_, uci_names$Original_UCI_Name,
+                          NA_character_, NA_character_),
     Raw_Column_Name = c("(blank)", as.character(0:1558), "(derived)"),
     CSV_Column_Position = c(seq_len(1560), NA_integer_), Role = roles,
     Data_Type = types, Unit = c("none", "pixel", "pixel", "dimensionless",
