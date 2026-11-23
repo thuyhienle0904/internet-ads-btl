@@ -20,29 +20,31 @@ The processed dataset retains all 1,558 features and contains 2,423 records,
 including 386 advertisements and 2,037 non-advertisements.
 Its 1,561 columns include the original index as \texttt{row\_id},
 the class label, and the derived \texttt{missing\_size} flag.
-The descriptive analysis focuses on the geometric variables, Local,
-and missingness by class. It also compares the occurrence rates of the
-1,554 binary term indicators between the two classes. Kaggle retains the
-numeric column headers. The original UCI \texttt{ad.names} file supplies
-the term names in the same order \citep{kushmerick1999}. We verified column
-alignment by comparing all 3,279 records with the UCI data after removing
-the exported index and normalizing whitespace and numeric formatting.
-For example, \texttt{term\_1243} is \texttt{ancurl*com}. The processed CSV
-retains stable IDs, and \texttt{term\_names.csv} records their original names.
+The descriptive analysis compares geometry, Local, missingness and the
+1,554 binary term indicators by class. The Kaggle CSV has numeric headers,
+and the UCI \texttt{ad.names} file provides the original names of all 1,558
+features in column order \citep{kushmerick1999}. We verified this alignment
+across all 3,279 records after excluding the exported row index and
+normalizing whitespace and numeric formatting. For example,
+\texttt{term\_1243} corresponds to \texttt{ancurl*com},
+\texttt{term\_0351} to \texttt{url*ads}, and
+\texttt{term\_1399} to \texttt{ancurl*click}.
 
 \section{Selected Variables and Class Encoding}
 
-Table~\ref{tab:selected-variables} documents the class label and the four original variables summarized
-individually in the descriptive analysis. Original identifiers refer to column
-headers, which differ from R's one-based column positions because the
-CSV includes an exported index.
+Table~\ref{tab:selected-variables} describes the class label and the
+features used in the analysis. The source headers are the numeric names in
+the Kaggle CSV. Each \texttt{term\_*} suffix preserves its source header.
 
 \begin{table}[htbp]
 \centering
 \small
 \caption{Data dictionary for the selected analytical variables.}
 \label{tab:selected-variables}
-\begin{tabular}{@{}ll>{\raggedright\arraybackslash}p{0.24\linewidth}>{\raggedright\arraybackslash}p{0.34\linewidth}@{}}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.13\linewidth}
+                   >{\raggedright\arraybackslash}p{0.20\linewidth}
+                   >{\raggedright\arraybackslash}p{0.22\linewidth}
+                   >{\raggedright\arraybackslash}p{0.36\linewidth}@{}}
 \toprule
 Source header & Variable & Type and unit & Description\\
 \midrule
@@ -50,14 +52,18 @@ Source header & Variable & Type and unit & Description\\
 \texttt{1} & Width & Numeric; pixels & Positive image width.\\
 \texttt{2} & Aspect\_Ratio & Numeric; unitless & Width divided by height.\\
 \texttt{3} & Local & Binary; 0 or 1 & Original binary indicator retained under the reference variable name.\\
+4--1557 & \texttt{term\_0004} to \texttt{term\_1557} & Binary; 0 or 1 & Presence of encoded terms from URLs or text associated with the image.\\
 \texttt{1558} & IsAds & Categorical & Advertisement (\texttt{ad.}) or non-advertisement (\texttt{nonad.}).\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The CSV header alone provides no detailed semantic definition of Local.
-Its binary encoding is retained without attributing additional meaning
-to the indicator. The remaining binary features are preserved in the processed file.
+A term value of 1 indicates that the encoded pattern is present.
+The repository mapping in \path{docs/uci_feature_names.csv} supplies
+\texttt{Original\_UCI\_Name} for the 1,558 features in the data dictionary.
+The generated \path{term_names.csv} pairs the 1,554 binary term IDs with
+their UCI names. The original dataset notes are in
+\texttt{ad.DOCUMENTATION} \citep{kushmerick1999}.
 
 The output CSV preserves the labels \texttt{ad.} and \texttt{nonad.}.
 Within the R preprocessing script, IsAds is represented as a factor
@@ -68,14 +74,13 @@ are distinct from this semantic mapping.
 The raw records are ordered by class, with 459 advertisements followed
 by 2,820 non-advertisements. A subset consisting only of the first rows
 would therefore fail to represent the full class distribution.
-
-
 \section{Project Objective}
 The project investigates which geometric measurements, missingness patterns
 and binary indicators distinguish advertisement images from other images.
-It compares logistic models using geometry and a second comparison with
-and without six selected indicators. The evaluation uses a group-based
-holdout to measure how well the models rank and detect advertisements.
+It compares a common main-effects logistic model with two extensions:
+one uses more flexible geometry, and the other adds six selected term
+indicators. A group-based holdout measures how well the models rank and
+detect advertisements on new records.
 The analysis extends basic descriptive and inferential methods with
 natural spline logistic regression and grouped out-of-fold threshold
 selection, as described in Chapters~2 and~5.
