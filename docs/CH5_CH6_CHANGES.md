@@ -110,6 +110,17 @@ within the 30-page body limit; check this when all chapters are merged.
   R 4.4.2 (Docker image `r-base:4.4.2`).
 - `report/thesis.tex` compiles with PDFLaTeX. Chapters 5 and 6 have no overfull lines.
 
+## Outputs on this branch
+
+All files in `output/inference/` and `report/figures/inference/` come from one
+full run of `scripts/run_all.R` (R 4.4.2). The input `add.csv` was rebuilt from
+the UCI download: it reproduces every number of the team's Kaggle file, but its
+bytes differ, so `split_audit.csv` records a different checksum
+(`7571ccf3…` instead of `f5a04661…`). If you run scripts 04 or 05 alone on the
+team's own `add.csv`, they stop with "Processed data changed"; run
+`scripts/run_all.R` instead. Chapter 4 figures were not regenerated in this
+branch (their data is unchanged).
+
 ## How to run
 
 ```sh
