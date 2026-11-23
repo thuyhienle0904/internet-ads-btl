@@ -67,13 +67,40 @@ geometry results, the missingness test and Table 5.2 are unchanged.
 
 | Quantity | Before (PDF 22/11) | After |
 |---|---|---|
-| Term model, test AP | 0.804 | 0.795 |
+| Term model, test AP | 0.804 | 0.795 (gain over main effects 0.201) |
 | Term model, test precision / FP | 0.613 / 41 | 0.607 / 42 |
 | Term model, test recall | 0.844 | 0.844 (unchanged) |
 | Term model, train OOF AP | 0.847 | 0.843 |
 | Likelihood-ratio test, deviance reduction (6 df) | 515.95 | 523.83 |
 | `ancurl*com` / `url*ads` / `ancurl*click` OR | 56.1 / 120.9 / 39.5 | 50.6 / 116.9 / 39.1 |
 | "No terms" baseline row | separate model (AP 0.612) | removed: identical to "Main effects" (AP 0.594) |
+
+## Review round 1 (independent reviewer: Gemini 4 Neon)
+
+The reviewer checked every number against the output CSVs. Accepted and fixed:
+
+- AP gain of the term model is 0.2005, so it is reported as **0.201** (was 0.200).
+- "Width is right-skewed" was wrong for ads (mean 325.6 < median 455); now
+  stated per class.
+- The `missing_size` odds ratio depends on the filled-in median width
+  (113.5 px); the text no longer reads it as a property of missingness.
+- The extra 20 false alarms of the term model come from its lower threshold
+  (0.14 vs 0.40), not from the terms: at the same recall the term model has
+  higher precision for every recall from 0.08 to 0.96 on test.
+- Precision–recall figure: step curves that match the AP computation, no
+  artificial (0, 1) start point, one legend below the panels.
+- Every method now has explicit Objective / Method / Result / Comment /
+  Conclusion parts (rubric), α = 0.05 is stated, the logistic equation and
+  Wald hypotheses are shown, every table and figure is referenced, and
+  precision, recall, AP, ROC-AUC, OOF prediction, BH, deviance and the Wilson
+  interval are defined where first used.
+- Thresholds (0.40 / 0.29 / 0.14) and the refit on all training records are
+  stated; training-row intervals are marked descriptive.
+- Chapter 6: elastic net instead of lasso; "no test data in fitting or
+  tuning" with the EDA caveat; Local added to the findings.
+
+Chapter 5 is now 10 pages and Chapter 6 is 4 pages. The whole report must stay
+within the 30-page body limit; check this when all chapters are merged.
 
 ## Verification
 

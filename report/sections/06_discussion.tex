@@ -1,25 +1,31 @@
 % Owner: Tân. Numbers come from Chapter 5 (output/inference/).
 \section{Main Findings}
 \begin{itemize}
-\item \textbf{Width is the main size signal.} Ads are wider than non-ads by
-  about 201~px on average (95\% CI 181 to 222~px). With height, Local and
-  missingness held fixed, each doubling of width multiplies the odds of an
-  ad by about 5.2. There is no evidence of a height association once width
-  is known.
-\item \textbf{Missing size information is a weak signal.} Records with a
-  missing feature are less often ads (11.0\% against 17.3\%), but the
-  association is weak (Cram\'er's $V=0.071$) and is not significant after
-  adjustment for size and Local.
+\item \textbf{Width is the main size signal.} Among images with an observed
+  width, ads are wider than non-ads by about 201~px on average (95\% CI 181
+  to 222~px). With height, Local and missingness held fixed, each doubling of
+  width multiplies the odds of an ad by about 5.2. There is no evidence of a
+  height association once width is known.
+\item \textbf{Local has a modest association.} Images with Local~=~1 have
+  about 1.55 times the odds of being an ad, with the other features held
+  fixed.
+\item \textbf{Missingness is a weak signal.} Records with a missing feature
+  value are less often ads (11.0\% against 17.3\%), but the association is
+  very weak (Cram\'er's $V=0.071$). In the logistic model its coefficient
+  depends on the value used to fill the missing sizes, so it does not
+  describe missingness itself.
 \item \textbf{The words around an image carry the most information.} The
   strongest terms read like advertising: \texttt{url*ads},
   \texttt{ancurl*click}, \texttt{ancurl*com} and \texttt{alt*click}. Adding
   six terms to the main-effects model raises test average precision from
-  0.594 to 0.795 (gain 0.200, 95\% CI 0.092 to 0.318) and catches 23 more
-  of the 77 test ads (65 against 42), at the cost of 20 more false alarms.
-\item \textbf{A curved size effect improves ranking, not decisions.} The
-  format + interaction model raises test average precision by 0.090 (95\%
-  CI 0.039 to 0.145), but at the chosen threshold it catches only 3 more
-  ads, a difference consistent with chance.
+  0.594 to 0.795 (gain 0.201, 95\% CI 0.092 to 0.318). At its threshold, the
+  term model catches 23 more of the 77 test ads (65 against 42); it also
+  flags 20 more non-ads, because its threshold was set lower to reach this
+  recall.
+\item \textbf{A curved size effect improves ranking, but not decisions at
+  the chosen threshold.} The format + interaction model raises test average
+  precision by 0.090 (95\% CI 0.039 to 0.145), but at its threshold it
+  catches only 3 more ads, a difference consistent with chance.
 \end{itemize}
 
 \section{Strengths of the Methods}
@@ -28,16 +34,18 @@
   analysis, and records with identical features were kept on one side of
   the split. The test set therefore measures performance on records the
   models have not seen.
-\item \textbf{No information from the test set.} Missing-value filling,
-  term selection and decision thresholds were all set on training data,
-  inside each cross-validation fold where needed, and then frozen.
+\item \textbf{No test data in fitting or tuning.} Missing-value imputation,
+  term selection, model fitting and decision thresholds all used training
+  data only, inside each cross-validation fold where needed, and were frozen
+  before the test set was used. (The exploratory analysis in Chapter~4 did
+  look at all records; see the limitations.)
 \item \textbf{Interpretable models.} Logistic regression gives odds ratios
   with confidence intervals, so each conclusion states both a direction and
   a size.
 \item \textbf{Uncertainty is shown, not hidden.} Confidence intervals,
   McNemar tests and bootstrap intervals separate the gains that are clearly
-  real (the terms) from those that may be chance (the extra ads caught by
-  the curved size effect).
+  real (the terms) from those that may be due to chance (the extra ads
+  caught by the curved size effect).
 \item \textbf{Missingness kept as information.} The \texttt{missing\_size}
   flag allowed us to test whether missing values relate to ad status,
   instead of hiding them by filling them in.
@@ -49,23 +57,25 @@
   77 ads, so intervals are wide. A different split could change the
   smaller differences.
 \item \textbf{Terms chosen by the data.} The six terms were selected because
-  they differ most between classes, and the same indicators had been seen in
-  the exploratory analysis. Their tests describe strong associations in this
+  they differ most between classes, and the exploratory analysis in
+  Chapter~4 had already shown the same indicators on all records, including
+  the later test records. Their tests describe strong associations in this
   dataset; they do not confirm a hypothesis fixed in advance.
-\item \textbf{Overlapping terms.} The three \texttt{alt} terms nearly
-  always occur together, so their separate odds ratios are imprecise, and
-  some term combinations occur almost only among ads, which makes the odds
-  ratios very large and unstable.
+\item \textbf{Overlapping terms and near-separation.} The three \texttt{alt}
+  terms nearly always occur together, so their separate odds ratios are
+  imprecise. Some term combinations occur almost only among ads, which makes
+  the odds ratios very large and their Wald intervals unreliable.
 \item \textbf{The precision target was not kept on new records.} The term
   model reached a training precision of 0.70, but its test precision
   interval, [0.51, 0.69], lies just below that target.
 \item \textbf{Independence and representativeness.} The tests assume
   independent records, but several images can come from the same web page
-  or site, and only exact duplicates were removed. The data come from a
-  1998 collection, and advertising formats have changed since then.
-\item \textbf{Observed widths only.} The width test uses records with an
-  observed width, and missingness differs between the classes, so the
-  tested records do not fully represent the images with unknown size.
+  or site, and only exact duplicates were removed. According to the UCI
+  documentation, the data were collected in 1998, and advertising formats
+  have changed since then.
+\item \textbf{Observed sizes only.} The width test uses records with an
+  observed width, and missingness differs between the classes, so its
+  result may not generalize to images whose dimensions are missing.
 \end{itemize}
 
 \section{Suggested Extensions}
@@ -73,9 +83,11 @@
 \item \textbf{Confirm a few terms chosen in advance.} Fix a small set of
   terms by reasoning before looking at the data (for example ``ads'' and
   ``click'') and test them on new data, so that the result is confirmatory.
-\item \textbf{Use all terms with penalized regression.} Lasso logistic
-  regression can consider all 1,554 terms at once and handles overlapping
-  terms by shrinking their coefficients.
+\item \textbf{Use all terms with penalized regression.} Penalized logistic
+  regression, such as the elastic net (which combines the variable selection
+  of the lasso with the shrinkage of ridge regression), can include all
+  1,554 terms at once. It keeps groups of overlapping terms stable and
+  prevents the extreme odds ratios caused by near-separation.
 \item \textbf{Repeat the split.} Repeated grouped cross-validation would
   show how much the test results vary between splits, instead of relying on
   one split.

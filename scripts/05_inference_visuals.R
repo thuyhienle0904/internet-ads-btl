@@ -108,8 +108,11 @@ pr <- do.call(rbind, lapply(c("train_oof", "test"), function(sample) {
   }))
 }))
 write.csv(pr, file.path(table_dir, "precision_recall_points.csv"), row.names = FALSE)
-draw_png("precision_recall_curves.png", 1600, 800, function() {
-  par(mfrow = c(1, 2), mar = c(4.5, 4.5, 3, 1.5), cex.main = 1.25, cex.lab = 1.15, cex.axis = 1.05)
+# Step curves match average_precision(): precision is constant between
+# recall levels. One shared legend below the panels keeps every curve visible.
+draw_png("precision_recall_curves.png", 1600, 860, function() {
+  par(mfrow = c(1, 2), mar = c(4.5, 4.5, 3, 1.5), oma = c(3, 0, 0, 0),
+      cex.main = 1.25, cex.lab = 1.15, cex.axis = 1.05)
   for (sample in c("train_oof", "test")) {
     n_ads <- sum(scores_for(sample)$y)
     plot(c(0, 1), c(0, 1), type = "n", xlab = "Ad recall", ylab = "Ad precision",
@@ -118,13 +121,13 @@ draw_png("precision_recall_curves.png", 1600, 800, function() {
     abline(h = unique(comparison$min_precision), lty = 3, col = "#666666")
     for (model in names(models)) {
       d <- pr[pr$sample == sample & pr$model == model, ]
-      lines(c(0, d$recall), c(1, d$precision), col = colors[model], lwd = 2)
+      lines(c(0, d$recall), c(d$precision[1], d$precision), type = "S",
+            col = colors[model], lwd = 2)
     }
-    ap <- comparison$average_precision[match(paste(names(models), sample),
-                                             paste(comparison$model, comparison$sample))]
-    legend("bottomleft", sprintf("%s (AP %.3f)", models, ap), col = colors, lwd = 2,
-           bty = "o", bg = "white", box.col = "white", cex = .95)
   }
+  par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE)
+  plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n", xlab = "", ylab = "")
+  legend("bottom", models, col = colors, lwd = 2, horiz = TRUE, bty = "n", cex = 1.05)
 })
 
 # The 2 x 2 confusion matrices expose class imbalance better than accuracy.
