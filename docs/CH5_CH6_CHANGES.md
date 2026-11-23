@@ -139,4 +139,4 @@ places where the author departed from round-1 suggestions (recall ranges on the
 raw step curve, no uncomputed claim about mean imputation, short inline
 definitions while Chapter 2 is pending, 1998 date from the UCI documentation).
 Applied: Comment blocks in 5.2 and 5.5.1, definitions of interaction and TP,
-`\\ln` in the logistic equation, "two-sided where this applies".
+`\ln` in the logistic equation, "two-sided where this applies".
