@@ -7,3 +7,7 @@
 "format_interaction","Ad","Non-Ad",32
 "format_interaction","Non-Ad","Ad",21
 "format_interaction","Non-Ad","Non-Ad",387
+"with_terms","Ad","Ad",65
+"with_terms","Ad","Non-Ad",12
+"with_terms","Non-Ad","Ad",42
+"with_terms","Non-Ad","Non-Ad",366

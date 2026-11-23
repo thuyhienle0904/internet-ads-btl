@@ -70,7 +70,15 @@ chosen_test <- lapply(seq_along(scores), function(i) {
   cbind(model = nm, sample = "test", min_precision = min_precision,
         metrics(y, scores[[nm]], chosen[[i]]$threshold))
 })
-result <- do.call(rbind, c(chosen, chosen_test))
+# 95% Wilson intervals: the test set has only 77 ads, so every rate carries
+# sampling error that the point estimate alone hides.
+add_intervals <- function(r) {
+  p <- t(mapply(wilson_interval, r$tp, r$tp + r$fp))
+  q <- t(mapply(wilson_interval, r$tp, r$tp + r$fn))
+  cbind(r, precision_lower = p[, 1], precision_upper = p[, 2],
+        recall_lower = q[, 1], recall_upper = q[, 2])
+}
+result <- add_intervals(do.call(rbind, c(chosen, chosen_test)))
 write.csv(result, file.path(out, "logistic_evaluation.csv"), row.names = FALSE)
 write.csv(data.frame(row_id = test$row_id, Ad = y, main = scores$main,
                      format_interaction = scores$format_interaction),
@@ -94,10 +102,42 @@ term_chosen_test <- lapply(seq_along(term_scores), function(i) {
   cbind(model = nm, sample = "test", min_precision = min_precision,
         metrics(y, term_scores[[nm]], term_chosen[[i]]$threshold))
 })
-term_result <- do.call(rbind, c(term_chosen, term_chosen_test))
+term_result <- add_intervals(do.call(rbind, c(term_chosen, term_chosen_test)))
 write.csv(term_result, file.path(out, "term_ablation_evaluation.csv"), row.names = FALSE)
 write.csv(data.frame(row_id = test$row_id, Ad = y,
                      baseline = term_scores$baseline,
                      with_terms = term_scores$with_terms),
           file.path(out, "term_ablation_test_predictions.csv"), row.names = FALSE)
+
+# Both comparisons start from the same main-effects model. If the term
+# pipeline's baseline ever drifts from it, stop instead of reporting two baselines.
+stopifnot(isTRUE(all.equal(term_scores$baseline, scores$main)),
+          isTRUE(all.equal(term_oof$baseline, oof$main[match(term_oof$row_id, oof$row_id)])),
+          isTRUE(all.equal(term_chosen[[1]]$threshold, chosen[[1]]$threshold)))
+
+# Paired comparisons on the same 485 test records: exact McNemar tests for
+# ads caught and non-ads flagged, and a bootstrap interval for the AP gain.
+comparison_test <- function(comparison, s1, t1, s2, t2) {
+  ads <- y == 1
+  caught <- exact_mcnemar(s1[ads] >= t1, s2[ads] >= t2)
+  flagged <- exact_mcnemar(s1[!ads] >= t1, s2[!ads] >= t2)
+  ap <- paired_ap_difference(y, s1, s2)
+  data.frame(comparison = comparison,
+             ads_caught_only_first = caught$only_first,
+             ads_caught_only_second = caught$only_second,
+             ads_p_value = caught$p_value,
+             nonads_flagged_only_first = flagged$only_first,
+             nonads_flagged_only_second = flagged$only_second,
+             nonads_p_value = flagged$p_value,
+             ap_difference = ap[["estimate"]],
+             ap_difference_lower = ap[["lower"]],
+             ap_difference_upper = ap[["upper"]])
+}
+set.seed(2026)
+comparisons <- rbind(
+  comparison_test("format_interaction_vs_main", scores$main, chosen[[1]]$threshold,
+                  scores$format_interaction, chosen[[2]]$threshold),
+  comparison_test("with_terms_vs_main", term_scores$baseline, term_chosen[[1]]$threshold,
+                  term_scores$with_terms, term_chosen[[2]]$threshold))
+write.csv(comparisons, file.path(out, "model_comparison_tests.csv"), row.names = FALSE)
 message("Held-out evaluation complete: ", length(y), " test records.")

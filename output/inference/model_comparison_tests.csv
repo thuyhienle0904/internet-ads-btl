@@ -1,0 +1,3 @@
+"comparison","ads_caught_only_first","ads_caught_only_second","ads_p_value","nonads_flagged_only_first","nonads_flagged_only_second","nonads_p_value","ap_difference","ap_difference_lower","ap_difference_upper"
+"format_interaction_vs_main",0,3,0.25,9,8,1,0.089573459559901,0.0386375195840264,0.144626289306784
+"with_terms_vs_main",0,23,2.38418579101562e-07,0,20,1.9073486328125e-06,0.200525387512586,0.0916618181263315,0.318192968132075
