@@ -18,8 +18,8 @@ training record. All hypothesis tests and model coefficients use the
 training records only; the test set is used once, at the end, to measure
 how well the models work on new records.
 
-All tests are two-sided at the significance level $\alpha=0.05$, and all
-confidence intervals are 95\% intervals. The target population consists of
+All tests use the significance level $\alpha=0.05$ (two-sided where this
+applies), and all confidence intervals are 95\% intervals. The target population consists of
 web images similar to those sampled in the original collection. The results
 describe associations, not causes.
 
@@ -59,6 +59,12 @@ Non-Ad & 1,269 & 124.2 & 82.1 & 101\\
 \textbf{Result.} The mean difference is 201.5~px, with a 95\% confidence
 interval of [181.4, 221.6]~px ($t=19.73$, $\mathrm{df}\approx 292.9$,
 $p<0.001$).
+
+\textbf{Comment.} The gap is large: the typical non-ad is about 100~px
+wide, so ads are on average more than twice as wide. Ad widths still vary a
+lot (SD 162~px), so width alone cannot separate the classes. The test
+compares the classes one feature at a time and uses only the 1,534 training
+records with an observed width.
 
 \textbf{Conclusion.} We reject $H_0$. Among web images with an observed
 width, ads are wider than non-ads on average, by roughly 180 to 220 pixels.
@@ -110,7 +116,7 @@ held fixed.
 
 \textbf{Method.} We fit the logistic regression model
 \[
-  \log\frac{P(\mathrm{Ad}=1)}{1-P(\mathrm{Ad}=1)}
+  \ln\frac{P(\mathrm{Ad}=1)}{1-P(\mathrm{Ad}=1)}
   =\beta_0+\beta_1\log_2\mathrm{Height}+\beta_2\log_2\mathrm{Width}
   +\beta_3\,\mathrm{Local}+\beta_4\,\texttt{missing\_size}
 \]
@@ -209,12 +215,19 @@ significant at the 5\% level. All six selected terms have adjusted
 $p<0.001$ (Table~\ref{tab:infer-term-chi}). Each of them is present in 27
 to 45\% of training ads but in at most 1.2\% of non-ads.
 
+\textbf{Comment.} The six terms were chosen because they differ most
+between the classes, so their very large $\chi^2$ values partly reflect this
+selection. Each test also looks at one term at a time: it cannot tell
+overlapping terms apart or separate a term's effect from that of width.
+Section~\ref{sec:infer-adjusted} addresses this.
+
 \textbf{Conclusion.} Many terms are associated with ad status. The strongest
 read like advertising: the image file sits in a path containing ``ads'',
 the image links to an address containing ``click'', and the alt text says
 ``click here''.
 
 \subsection{Association after adjustment}
+\label{sec:infer-adjusted}
 \textbf{Objective.} Check whether the six terms add information beyond
 size, Local and missingness.
 
@@ -273,7 +286,8 @@ detect ads better:
   $\log_2$ Height and $\log_2$ Width with smooth curves (natural cubic
   splines with three degrees of freedom), adds a wide-banner indicator
   (aspect ratio $\geq 6$) and a $\log_2\mathrm{Height}\times\log_2\mathrm{Width}$
-  interaction. It asks whether a curved size effect helps.
+  interaction, which lets the effect of width depend on height. It asks
+  whether a curved size effect helps.
 \item \textbf{Main effects + six terms} adds the six term indicators. It asks
   whether the words around an image help.
 \end{itemize}
@@ -293,8 +307,9 @@ precision of at least 0.70: 0.40 for the main-effects model, 0.29 for format
 all 1,938 training records, the thresholds are frozen, and the test set is
 used once.
 
-The measures are defined with ads as the positive class. A false positive
-(FP) is a non-ad flagged as an ad, and a false negative (FN) is a missed ad.
+The measures are defined with ads as the positive class. A true positive
+(TP) is a flagged ad, a false positive (FP) is a non-ad flagged as an ad,
+and a false negative (FN) is a missed ad.
 \emph{Precision} is the share of flagged records that are ads,
 TP/(TP+FP), and \emph{recall} is the share of ads that are flagged,
 TP/(TP+FN). These describe the decisions at the frozen threshold. Average

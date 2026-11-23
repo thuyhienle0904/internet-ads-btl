@@ -99,7 +99,7 @@ The reviewer checked every number against the output CSVs. Accepted and fixed:
 - Chapter 6: elastic net instead of lasso; "no test data in fitting or
   tuning" with the EDA caveat; Local added to the findings.
 
-Chapter 5 is now 10 pages and Chapter 6 is 4 pages. The whole report must stay
+Chapter 5 is now about 10 pages and Chapter 6 is 4 pages. The whole report must stay
 within the 30-page body limit; check this when all chapters are merged.
 
 ## Verification
@@ -131,3 +131,12 @@ still required and is not committed.
 | Tường (Ch. 1) | §1.2–1.3 call the indicators anonymous; the names come from `ad.names` in the UCI distribution. |
 | Ch. 7 | The GitHub repository is **private**, so the code link will not open for the lecturer. Make it public or provide another link. |
 | Cover | Title, names, student IDs, class, lecturer and date are still empty. |
+
+## Review round 2
+
+No must-fix issues. The reviewer re-verified every number and accepted the four
+places where the author departed from round-1 suggestions (recall ranges on the
+raw step curve, no uncomputed claim about mean imputation, short inline
+definitions while Chapter 2 is pending, 1998 date from the UCI documentation).
+Applied: Comment blocks in 5.2 and 5.5.1, definitions of interaction and TP,
+`\\ln` in the logistic equation, "two-sided where this applies".
