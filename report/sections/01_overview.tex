@@ -4,7 +4,7 @@
 The Internet Advertisements dataset was obtained from
 \href{https://www.kaggle.com/datasets/uciml/internet-advertisements-data-set/data}{Kaggle}
 and is documented by the
-\href{https://archive.ics.uci.edu/dataset/51/internet+advertisements}{UCI Machine Learning Repository}.
+\href{https://archive.ics.uci.edu/dataset/51/internet+advertisements}{UCI Machine Learning Repository} \citep{kushmerick1999}.
 Each observation represents an image or image element on a web page.
 The target is whether the image is an advertisement (\texttt{ad}) or
 not (\texttt{nonad}). The task concerns image classification rather
@@ -22,7 +22,13 @@ Its 1,561 columns include the original index as \texttt{row\_id},
 the class label, and the derived \texttt{missing\_size} flag.
 The descriptive analysis focuses on the geometric variables, Local,
 and missingness by class. It also compares the occurrence rates of the
-1,554 binary indicators (\texttt{term\_*}) between the two classes.
+1,554 binary term indicators between the two classes. Kaggle retains the
+numeric column headers. The original UCI \texttt{ad.names} file supplies
+the term names in the same order \citep{kushmerick1999}. We verified column
+alignment by comparing all 3,279 records with the UCI data after removing
+the exported index and normalizing whitespace and numeric formatting.
+For example, \texttt{term\_1243} is \texttt{ancurl*com}. The processed CSV
+retains stable IDs, and \texttt{term\_names.csv} records their original names.
 
 \section{Selected Variables and Class Encoding}
 
@@ -36,7 +42,7 @@ CSV includes an exported index.
 \small
 \caption{Data dictionary for the selected analytical variables.}
 \label{tab:selected-variables}
-\begin{tabular}{@{}llp{0.24\linewidth}p{0.34\linewidth}@{}}
+\begin{tabular}{@{}ll>{\raggedright\arraybackslash}p{0.24\linewidth}>{\raggedright\arraybackslash}p{0.34\linewidth}@{}}
 \toprule
 Source header & Variable & Type and unit & Description\\
 \midrule
@@ -62,3 +68,14 @@ are distinct from this semantic mapping.
 The raw records are ordered by class, with 459 advertisements followed
 by 2,820 non-advertisements. A subset consisting only of the first rows
 would therefore fail to represent the full class distribution.
+
+
+\section{Project Objective}
+The project investigates which geometric measurements, missingness patterns
+and binary indicators distinguish advertisement images from other images.
+It compares logistic models using geometry and a second comparison with
+and without six selected indicators. The evaluation uses a group-based
+holdout to measure how well the models rank and detect advertisements.
+The analysis extends basic descriptive and inferential methods with
+natural spline logistic regression and grouped out-of-fold threshold
+selection, as described in Chapters~2 and~5.

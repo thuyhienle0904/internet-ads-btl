@@ -1,10 +1,9 @@
-% Preview one section without compiling the whole report.
-% Change only the next line to the section you are currently writing.
-\documentclass[final]{hcmut-thesis}
+% Change previewfile to the section to inspect; bibliography is included.
+\documentclass[final,oneside,openany]{hcmut-thesis}
 \input{settings}
-\newcommand{\previewfile}{sections/01_overview}
-
+\newcommand{\previewfile}{sections/02_background}
 \begin{document}
-\chapter*{Preview}
+\chapter*{Section Preview}
 \input{\previewfile}
+\input{sections/08_references}
 \end{document}

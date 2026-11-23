@@ -14,9 +14,8 @@ Chapter~5 uses the 2,423 deduplicated records from Chapter~3. A seeded
 held-out test records (77 ads). Records with identical feature values are
 grouped together, and each group is assigned entirely to either the
 training set or the test set, so the test set contains no copy of a
-training record. All hypothesis tests and model coefficients use the
-training records only; the test set is used once, at the end, to measure
-how well the models work on new records.
+training record. Model coefficients and tests of feature associations use the training
+records. Paired performance comparisons use the held-out predictions.
 
 All tests use the significance level $\alpha=0.05$ (two-sided where this
 applies), and all confidence intervals are 95\% intervals. The target population consists of
@@ -39,8 +38,8 @@ The test uses the training records with an observed width
 (Table~\ref{tab:infer-width}). Width is not normal in either class: it is
 right-skewed for non-ads, and for ads the mean is below the median because
 many ads are standard banners about 468~px wide. Each class has hundreds of
-observations, however, so by the central limit theorem the sample means are
-close to normal and the test is valid.
+observations, which supports the large-sample approximation if
+records are sufficiently independent.
 
 \begin{table}[htbp]
 \centering
@@ -164,11 +163,14 @@ on the filled-in value and describes no property of missingness itself.
 and Local a modest one. There is no evidence of a height association once
 width is known.
 
+\begin{lstlisting}[style=edaR,caption={Shared main-effects formula used in both model comparisons.}]
+base_formula <- Ad ~ log2_Height + log2_Width + Local + missing_size
+\end{lstlisting}
+
 \section{Do Term Indicators Add Information?}
 The 1,554 binary term indicators record whether a phrase appears in the
 text around an image. Their names come from the file \texttt{ad.names} in
-the UCI distribution of the dataset (DOI 10.24432/C5V011); the Kaggle CSV
-keeps only the column numbers. A name has the form
+the UCI distribution \citep{kushmerick1999}. The Kaggle CSV keeps the column numbers. A name has the form
 \texttt{field*phrase}: the field shows where the phrase occurs
 (\texttt{url} and \texttt{ancurl} are URL fields, where \texttt{ancurl} is
 the URL that the image links to; \texttt{alt} is the image's alternative
@@ -244,16 +246,16 @@ term's OR with all other predictors held fixed.
 \centering
 \caption{Term odds ratios adjusted for size, Local, missingness and the other five terms (training data).}
 \label{tab:infer-term-or}
-\begin{tabular}{lrrr}
+\begin{tabular}{llrrr}
 \toprule
-Term & OR & 95\% Wald interval & $p$\\
+Column & Term & OR & 95\% Wald interval & $p$\\
 \midrule
-\texttt{ancurl*com} & 50.61 & [21.29, 120.27] & $<0.001$\\
-\texttt{url*ads} & 116.93 & [33.18, 412.08] & $<0.001$\\
-\texttt{ancurl*click} & 39.13 & [10.64, 143.82] & $<0.001$\\
-\texttt{alt*click} & 6.92 & [1.42, 33.69] & 0.017\\
-\texttt{alt*here} & 0.91 & [0.04, 19.34] & 0.949\\
-\texttt{alt*click+here} & 1.23 & [0.03, 43.70] & 0.909\\
+\texttt{term\_1243} & \texttt{ancurl*com} & 50.61 & [21.29, 120.27] & $<0.001$\\
+\texttt{term\_0351} & \texttt{url*ads} & 116.93 & [33.18, 412.08] & $<0.001$\\
+\texttt{term\_1399} & \texttt{ancurl*click} & 39.13 & [10.64, 143.82] & $<0.001$\\
+\texttt{term\_1483} & \texttt{alt*click} & 6.92 & [1.42, 33.69] & 0.017\\
+\texttt{term\_1435} & \texttt{alt*here} & 0.91 & [0.04, 19.34] & 0.949\\
+\texttt{term\_1455} & \texttt{alt*click+here} & 1.23 & [0.03, 43.70] & 0.909\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -285,7 +287,8 @@ detect ads better:
 \item \textbf{Format + interaction} replaces the straight-line effects of
   $\log_2$ Height and $\log_2$ Width with smooth curves (natural cubic
   splines with three degrees of freedom), adds a wide-banner indicator
-  (aspect ratio $\geq 6$) and a $\log_2\mathrm{Height}\times\log_2\mathrm{Width}$
+  (aspect ratio $\geq 6$ after training-based imputation) and a
+  $\log_2\mathrm{Height}\times\log_2\mathrm{Width}$
   interaction, which lets the effect of width depend on height. It asks
   whether a curved size effect helps.
 \item \textbf{Main effects + six terms} adds the six term indicators. It asks
@@ -316,8 +319,8 @@ TP/(TP+FN). These describe the decisions at the frozen threshold. Average
 precision (AP) and ROC-AUC describe the ranking over all thresholds: AP
 averages the precision obtained as recall increases, and ROC-AUC is the
 probability that a randomly chosen ad scores higher than a randomly chosen
-non-ad. A model that ranks at random has an expected AP equal to the share
-of ads, 0.159 in the test set. Because the test set has only 77 ads, each
+non-ad, with half credit for a tie. The test ad prevalence of 0.159 provides
+a reference level for the precision--recall curves. Because the test set has only 77 ads, each
 test precision and recall is given with a 95\% Wilson confidence interval,
 which behaves better than the usual normal interval for small samples and
 proportions near 0 or 1.
@@ -413,5 +416,5 @@ records its threshold flags somewhat more non-ads than intended.
 \textbf{Conclusion.} On new records, the six terms clearly improve ad
 detection: the term model ranks ads better and, at its threshold, catches
 far more of them. A curved size effect improves the ranking only modestly
-and does not change the decisions at the chosen threshold. All conclusions
+and yields no clear improvement in detection at the chosen thresholds. All conclusions
 rest on one test set with 77 ads.

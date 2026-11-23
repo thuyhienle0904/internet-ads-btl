@@ -1,0 +1,41 @@
+% Project cover. The course fields and roster are defined in settings.tex.
+\makeatletter
+\begin{titlingpage}
+\thispagestyle{empty}
+\begin{center}
+{\bfseries VIETNAM NATIONAL UNIVERSITY HO CHI MINH CITY\par}
+{\bfseries HO CHI MINH CITY UNIVERSITY OF TECHNOLOGY\par}
+\vspace{0.5cm}
+\ifx\@deptname\@empty Faculty: \rule{8cm}{0.3pt}\else\@deptname\fi\par
+\vspace{0.7cm}
+\includegraphics[width=2.8cm]{graphics/hcmut.png}\par
+\vspace{0.7cm}
+{\Large\bfseries COURSE PROJECT REPORT\par}
+\vspace{0.4cm}
+{\large PROBABILITY AND STATISTICS\par}
+\vspace{0.8cm}
+\ifx\@title\@empty Project title: \rule{9cm}{0.3pt}\else
+{\Large\bfseries\@title}\fi\par
+\end{center}
+\vspace{0.7cm}
+\noindent Class: \ifx\@stumajor\@empty\rule{9cm}{0.3pt}\else\@stumajor\fi\par
+\medskip\noindent Group: \ifx\@defcouncil\@empty\rule{10.5cm}{0.3pt}\else\@defcouncil\fi\par
+\medskip\noindent Instructor: \ifx\@supervisor\@empty\rule{9.7cm}{0.3pt}\else\@supervisor\fi\par
+\vspace{0.5cm}
+\begin{center}\small
+\newcommand{\teammember}[5]{#1 & #2 & #3 & #4\\}
+\begin{tabularx}{\linewidth}{c >{\raggedright\arraybackslash}X l >{\raggedright\arraybackslash}X}
+\toprule
+No. & Full name & Student ID & Main responsibility\\
+\midrule
+\projectteam
+\bottomrule
+\end{tabularx}
+\end{center}
+\vfill
+\begin{center}
+\@reportplace, \ifx\@reporttime\@empty\rule{4cm}{0.3pt}\else\@reporttime\fi
+\end{center}
+\end{titlingpage}
+\makeatother
+\pagestyle{fancy}

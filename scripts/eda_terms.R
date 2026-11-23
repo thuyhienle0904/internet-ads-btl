@@ -1,10 +1,12 @@
-# Descriptive analysis of the 1,554 anonymous binary term indicators.
+# Descriptive analysis of the 1,554 binary term indicators.
 # Run standalone: Rscript scripts/eda_terms.R
 arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
 if (!length(arg)) stop("Run this script with Rscript.")
 root <- normalizePath(".")
 if (!file.exists(file.path(root, "data", "processed", "internet_ads_processed.csv")))
   stop("Run from the repository root.")
+source(file.path(root, "scripts", "term_names.R"))
+original_names <- load_term_names(root)
 input <- file.path(root, "data", "processed", "internet_ads_processed.csv")
 out <- file.path(root, "output", "eda-r")
 table_dir <- file.path(out, "tables")
@@ -32,7 +34,7 @@ distinct_patterns <- sum(!duplicated(as.data.frame(t(x))))
 eligible_patterns <- sum(!duplicated(as.data.frame(t(x[, support >= 20,
                                                     drop = FALSE]))))
 term_table <- data.frame(
-  term = terms, support = support, ad_support = ad_support,
+  term = terms, name = unname(original_names[terms]), support = support, ad_support = ad_support,
   nonad_support = nonad_support,
   prevalence_all = support / nrow(x),
   prevalence_ad = ad_support / n_ad,
@@ -41,6 +43,8 @@ term_table <- data.frame(
   ad_rate_when_present = ifelse(support > 0, ad_support / pmax(support, 1), NA_real_),
   row.names = NULL)
 write.csv(term_table, file.path(table_dir, "term_prevalence_all.csv"), row.names = FALSE)
+write.csv(term_table[c("term", "name")],
+          file.path(root, "data", "processed", "term_names.csv"), row.names = FALSE)
 
 row_count <- rowSums(x)
 row_table <- data.frame(row_id = data$row_id, IsAds = data$IsAds,
@@ -79,15 +83,16 @@ stripchart(list(row_count[y], row_count[!y]), method = "jitter",
 dev.off()
 
 png(file.path(figure_dir, "term_class_prevalence.png"),
-    width = 1400, height = 950, res = 150)
-par(mar = c(7, 11, 4, 2))
+    width = 1600, height = 1050, res = 160)
+par(mar = c(5, 13, 3, 2))
 values <- rbind(Ad = 100 * top_plot$prevalence_ad,
                 Nonad = 100 * top_plot$prevalence_nonad)
+labels <- sprintf("%s (%s)", top_plot$term, top_plot$name)
 barplot(values[, nrow(top_plot):1, drop = FALSE], beside = TRUE, horiz = TRUE,
-        names.arg = top_plot$term[nrow(top_plot):1], las = 1,
+        names.arg = rev(labels), las = 1, cex.names = .85,
         col = c("#D55E00", "#0072B2"), border = NA,
         xlab = "Within-class prevalence (%)",
-        main = "Largest term prevalence differences | support >= 20")
+        main = "Largest term prevalence differences")
 legend("bottomright", c("Ad", "Non-Ad"),
        fill = c("#D55E00", "#0072B2"), bty = "n")
 dev.off()

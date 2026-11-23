@@ -1,63 +1,52 @@
-% Shared preamble and cover information. Owner: Phúc.
-% Both thesis.tex and preview.tex load this file.
-
-\usepackage{amsmath,amssymb,booktabs,float}
-\usepackage[nameinlink]{cleveref}
-
-% Shared styling for the R implementation excerpts in Chapter 4.
-\usepackage{xcolor,listings}
-\definecolor{edaCodeBackground}{HTML}{F4F7FA}
-\definecolor{edaCodeBorder}{HTML}{C7D5E2}
-\definecolor{edaCodeKeyword}{HTML}{205A97}
-\definecolor{edaCodeString}{HTML}{8C4A22}
-\definecolor{edaCodeComment}{HTML}{387568}
-\definecolor{edaCodeNumber}{HTML}{65758B}
-\lstdefinestyle{edaR}{
-  language=R,
-  basicstyle=\ttfamily\footnotesize,
-  keywordstyle=\color{edaCodeKeyword}\bfseries,
-  stringstyle=\color{edaCodeString},
-  commentstyle=\color{edaCodeComment}\itshape,
-  backgroundcolor=\color{edaCodeBackground},
-  rulecolor=\color{edaCodeBorder},
-  frame=single,
-  frameround=tttt,
-  framesep=7pt,
-  framerule=0.5pt,
-  numbers=left,
-  numberstyle=\tiny\color{edaCodeNumber},
-  numbersep=10pt,
-  xleftmargin=22pt,
-  xrightmargin=8pt,
-  breaklines=true,
-  breakatwhitespace=false,
-  columns=fullflexible,
-  keepspaces=true,
-  showstringspaces=false,
-  tabsize=2,
-  aboveskip=10pt,
-  belowskip=12pt
-}
-
-\graphicspath{{../output/figures/}}
-
+% Owner: Phuc. Course and project metadata.
+\usepackage{amsmath,amssymb,booktabs,float,tabularx,listings,xcolor}
+\graphicspath{{figures/eda/}{../output/figures/}{graphics/}}
 \reporttype{Course Project Report}
-\title{Internet Advertisement Classification}
-\deptname{[Faculty name]}
-\stumajor{Probability and Statistics / [Class]}
-\defcouncil{[Group / class if applicable]}
-\supervisor{[Instructor name]}
-\reviewer{[Not applicable if none]}
-\stuname{
-  Thiều Tường -- [2550364]
-
-  Nguyễn Tiến Phúc -- [2550333]
-
-  Bách -- [Student ID 3]
-
-  Lê Thụy Thúy Hiền -- 2510070
-
-  Tân -- [Student ID 5]
+\title{Internet Advertisement Classification\\Using Machine Learning Models}
+\deptname{Faculty of Applied Science}
+\stumajor{CC08}
+\defcouncil{7}
+\supervisor{Dr. Nguyen Tien Dung}
+\reviewer{}
+\stuname{}
+% One roster serves the cover and the contributions chapter.
+% Arguments: number, full name, student ID, cover role, contribution.
+\newcommand{\projectteam}{%
+  \teammember{1}{Lê Thụy Thúy Hiền}{2510070}{Statistical inference}{Statistical modelling, association tests, term screening, and model results.}%
+  \teammember{2}{Lê Hoàng Bách}{2550009}{Descriptive analysis}{Descriptive statistics, visualizations, and exploratory interpretation.}%
+  \teammember{3}{Nguyễn Đức Nhân}{2550174}{}{}%
+  \teammember{4}{Lê Thanh Tân}{2550211}{Model evaluation}{Model evaluation, paired comparisons, uncertainty analysis, and discussion.}%
+  \teammember{5}{Nguyễn Tiến Phúc}{2550333}{Report integration}{LaTeX integration, background, citations, reproduction guide, and report and output verification.}%
+  \teammember{6}{Thiều Tường}{2550364}{Data preprocessing}{Input validation, deduplication, missingness audit, data dictionary, and preprocessing write-up.}%
 }
-\reportplace{Hồ Chí Minh}
-\reporttime{[Submission month and year]}
+\reportplace{Ho Chi Minh City}
+\reporttime{November 2026}
+\AtBeginDocument{\renewcommand{\bibname}{References}}
+\hypersetup{unicode=true,citecolor=black,urlcolor=blue,pdftitle={Internet Advertisement Classification Using Machine Learning Models}}
+% Keep complete words together instead of inserting line-end hyphens.
+\hyphenpenalty=10000
+\exhyphenpenalty=10000
+\setlength{\emergencystretch}{3em}
+\tolerance=2000
+\setSpacing{1.04}
+\setlength{\beforechapskip}{12pt}
+\setlength{\midchapskip}{12pt}
+\setlength{\afterchapskip}{20pt}
+\lstdefinestyle{rcode}{language=R,basicstyle=\ttfamily\footnotesize,
+ frame=single,rulecolor=\color{black!40},backgroundcolor=\color{black!2},
+ numbers=left,numberstyle=\tiny,numbersep=8pt,
+ xleftmargin=15pt,xrightmargin=4pt,framesep=5pt,
+ breaklines=true,breakatwhitespace=false,columns=fullflexible,
+ keepspaces=true,showstringspaces=false,tabsize=2,captionpos=b,
+ aboveskip=9pt,belowskip=10pt,
+ keywordstyle=\color{blue!55!black},commentstyle=\color{black!60}}
+\lstdefinestyle{edaR}{style=rcode}
+\lstset{style=rcode}
+\renewcommand{\lstlistingname}{R Code}
+\newcommand{\tabref}[1]{Table~\ref{#1}}
+\newcommand{\figref}[1]{Figure~\ref{#1}}
+\renewcommand{\coverpage}{\input{cover}}
+% Build from report/: .\build.ps1 ; preview: .\build.ps1 -Target preview
+% Add R excerpts with lstlisting (caption/label) or lstinputlisting.
+% Only sections/08_references.tex calls the bibliography.
+% Edit the shared roster and course information in this file.

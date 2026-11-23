@@ -23,11 +23,6 @@ labels <- c("ad.", "nonad.")
 \end{lstlisting}
 
 \section{Class Distribution}
-\begin{lstlisting}[style=edaR]
-class_summary <- summarize_labels(data, "IsAds", labels)
-print(class_summary)
-\end{lstlisting}
-
 \texttt{summarize\_labels} counts each label and divides by 2,423.
 
 \begin{table}[htbp]
@@ -52,19 +47,12 @@ with 14.00\% in the raw data. Always predicting \texttt{nonad.} would
 give 84.07\% accuracy and zero recall for advertisements on this sample.
 
 \section{Missingness by Class}
-\begin{lstlisting}[style=edaR]
-missing_summary <- summarize_binary(
-  data, "missing_size", "IsAds", labels
-)
-print(missing_summary[missing_summary$group != "all", ])
-\end{lstlisting}
-
 The \texttt{missing\_size} flag defined in Chapter~3 includes missing
 Local values. Figure~\ref{fig:eda-missing} compares the proportions
 within each class.
 The missingness flag is 1 for 58 of 386 advertisements (15.03\%)
 and 441 of 2,037 non-advertisements (21.65\%).
-The following tables report observed counts for each feature.
+The next section reports observed counts for each feature.
 
 \edageometryfigure{binary_002.png}{Proportion of records with any original feature missing by class.}{fig:eda-missing}
 
@@ -131,15 +119,6 @@ non-advertisements (Figure~\ref{fig:eda-3}). The distributions
 also overlap for this feature.
 
 \section{Overall Numerical Summary}
-\begin{lstlisting}[style=edaR]
-overall_summary <- numeric_summary[
-  numeric_summary$group == "all",
-  c("variable", "n_valid", "n_missing", "mean", "sd", "min",
-    "q1", "median", "q3", "max", "iqr")
-]
-print(overall_summary)
-\end{lstlisting}
-
 Table~\ref{tab:eda-overall} gives the observed count used to calculate each feature summary.
 
 \begin{table}[htbp]
@@ -168,16 +147,6 @@ IQR & 60.00 & 112.25 & 4.4951\\
 The width and aspect ratio means exceed their medians, consistent
 with the longer upper tails in their histograms. The normal Q--Q plots
 assess the shape of the observed Height and Width distributions.
-
-\begin{lstlisting}[style=edaR]
-par(mfrow = c(1, 2))
-for (variable in c("Height", "Width")) {
-  observed <- na.omit(data[[variable]])
-  qqnorm(observed, main = variable,
-         pch = 16, cex = 0.4)
-  qqline(observed, col = "#a76423")
-}
-\end{lstlisting}
 
 \texttt{qqnorm} compares ordered feature values with theoretical normal
 quantiles; \texttt{qqline} adds a reference line through the quartiles.
@@ -230,19 +199,6 @@ Potential outliers are identified using type 7 quartiles and the fences
  \mathrm{IQR}=Q_3-Q_1,\qquad
  L=Q_1-1.5\,\mathrm{IQR},\qquad U=Q_3+1.5\,\mathrm{IQR}.
 \]
-\begin{lstlisting}[style=edaR]
-iqr_flags <- function(x) {
-  x <- na.omit(x)
-  q <- quantile(x, c(0.25, 0.75), type = 7,
-                names = FALSE)
-  lower <- q[1] - 1.5 * diff(q)
-  upper <- q[2] + 1.5 * diff(q)
-  data.frame(lower_fence = lower, upper_fence = upper,
-             n_flagged = sum(x < lower | x > upper))
-}
-lapply(data[, geometry], iqr_flags)
-\end{lstlisting}
-
 The calculation flags values strictly outside the fences. These counts
 use pooled thresholds. Class-specific boxplots use the default R Tukey
 hinges, which can differ slightly from type 7 quartiles; their plotted
@@ -275,13 +231,6 @@ advertisements (77.86\%) and 1,455 of 2,028 non-advertisements
 
 \edageometryfigure{binary_001.png}{Proportion of observed Local values equal to 1 by class.}{fig:eda-local}
 
-\begin{lstlisting}[style=edaR]
-binary_summary <- summarize_binary(
-  data, "Local", "IsAds", labels
-)
-print(binary_summary[binary_summary$group != "all", ])
-\end{lstlisting}
-
 \section{Term Indicators by Class}
 The processed dataset also contains 1,554 binary term indicators,
 \texttt{term\_0004} through \texttt{term\_1557}. Each suffix is the
@@ -294,11 +243,10 @@ A value of 1 indicates the presence of the corresponding term pattern.
 For example, \texttt{ancurl*com} encodes the pattern \texttt{com}
 in an anchor URL.
 
-\noindent Source: \href{https://archive.ics.uci.edu/dataset/51/internet+advertisements}{UCI Internet Advertisements},
-\texttt{ad.names} and \texttt{ad.DOCUMENTATION}.
+The source files \texttt{ad.names} and \texttt{ad.DOCUMENTATION} are
+part of the UCI distribution \citep{kushmerick1999}.
 
-
-Only 29,485 of their 3,765,342 cells are one (density 0.783\%).
+Only 29,485 of the indicators' 3,765,342 cells are one (density 0.783\%).
 The median record has 17 active terms in the Ad class and 9 in the
 Non-Ad class; the respective means are 19.92 and 10.70.
 These counts refer to indicator columns: only 760 distinct 0/1 patterns
@@ -335,10 +283,10 @@ Original name (identifier) & Ad: count (rate) & Non-Ad: count (rate) & Gap (pp)\
 
 \edageometryfigure{term_class_prevalence.png}{Six terms with the largest Ad versus Non-Ad prevalence differences among indicators with support of at least 20.}{fig:eda-terms}
 
-When \texttt{term\_1243} is present, 167 of 179 records (93.30\%)
+When \texttt{term\_1243} (\texttt{ancurl*com}) is present, 167 of 179 records (93.30\%)
 are Ad. It is absent in 219 of 386 Ad records, so this term alone
 would miss more than half of them. The largest contrast in the other
-direction among eligible indicators is \texttt{term\_0548}, whose Ad minus
+direction among eligible indicators is \texttt{term\_0548} (\texttt{origurl*geocities.com}), whose Ad minus
 Non-Ad prevalence difference is -15.69 percentage points. The six
 largest absolute contrasts happen to favor Ad; the figure does not
 display the strongest Non-Ad-associated indicator. These are

@@ -1,3 +1,144 @@
-% Owner: Phúc
-% Fill in only concepts and notation actually used by Tường, Bách, Hiền, and Tân.
-% Every new method must have an entry in METHODS_LOG.md and a reference.
+% Owner: Phuc. This chapter describes methods present in Tuong/Bach's code.
+\section{Observations, Labels and Analytical Scope}
+The dataset describes web images with geometric and contextual features
+\citep{kushmerick1999}. The processed labels are \texttt{ad.} and
+\texttt{nonad.}. The models use \(Y=1\) for advertisements.
+
+\section{Deduplication and Missing Values}
+The duplicate key includes all original features and the label after
+whitespace trimming. It excludes the exported row index and retains
+identical feature vectors with conflicting labels. For each feature
+\(j\), univariate summaries use the set \(O_j\) of records with observed
+values. Class summaries also restrict this set to the relevant label.
+The processed CSV preserves missing measurements and observed extremes.
+
+\section{Numerical and Binary Summaries}
+For observed values $x_1,\ldots,x_n$, the sample mean, corrected sample
+variance and sample standard deviation are
+\begin{equation}
+\bar{x}=\frac{1}{n}\sum_{i=1}^n x_i,\qquad
+s^2=\frac{1}{n-1}\sum_{i=1}^n(x_i-\bar{x})^2,\qquad s=\sqrt{s^2}.
+\end{equation}
+The standard deviation requires at least two observations. The median is the
+middle ordered observation, or the average of the two middle observations
+when $n$ is even. Mean and median summarize location; SD and the interquartile
+range summarize spread \citep{nistHandbook}.
+
+The EDA code uses R's type 7 sample quantiles. For probability $q$, define
+$h=1+(n-1)q$, $j=\lfloor h\rfloor$ and $\gamma=h-j$. Between adjacent order
+statistics the estimate is $(1-\gamma)x_{(j)}+\gamma x_{(j+1)}$; endpoints
+return the minimum and maximum. The first and third quartiles use $q=0.25$
+and $q=0.75$, and $\mathrm{IQR}=Q_3-Q_1$ \citep{rQuantile}.
+
+For a binary feature and class $c$, the observed prevalence is
+\begin{equation}
+\hat{p}_{jc}=\frac{\#\{i\in O_j:y_i=c,\ x_{ij}=1\}}
+{\#\{i\in O_j:y_i=c\}}.
+\end{equation}
+Its denominator excludes missing values. Class proportions instead use the
+total number of labeled records. Differences between binary-feature rates
+are expressed in percentage points, $100(\hat p_{j,\mathrm{ad}}-
+\hat p_{j,\mathrm{nonad}})$. Ranking these differences across many indicators
+is exploratory screening, not a significance test or validated feature selection.
+
+\section{Graphical Exploration and Extreme Values}
+Histograms display the shape of observed distributions. Class-specific
+boxplots compare medians, spreads and potential extremes; scatterplots reveal
+overlap and relationships between numerical measurements. These plots complement the numerical summaries \citep{nistHandbook}.
+
+The numerical outlier audit uses pooled type 7 quartiles and flags values
+strictly below $Q_1-1.5\,\mathrm{IQR}$ or above $Q_3+1.5\,\mathrm{IQR}$.
+Flagging identifies observations for inspection; it does not justify deletion.
+The boxplots use R's default Tukey hinges, which need not coincide exactly
+with type 7 quartiles \citep{rBoxplot}. Therefore their displayed fliers may
+differ from the pooled audit counts, especially when plots are split by class.
+All observed extremes are retained in the current workflow.
+
+A normal Q--Q plot compares ordered observations with theoretical normal
+quantiles. The implemented reference line passes through the first and third
+quartiles. Departures from a straight line indicate limitations of a normal
+approximation to that variable \citep{rQQ}. This graphical assessment is not
+a formal normality test, nor does it determine the assumptions of a future
+classification model.
+
+\section{Pearson Correlation and Complete Cases}
+For paired observations with nonzero variation in each variable, Pearson's
+sample correlation is
+\begin{equation}
+r_{XY}=\frac{\sum_{i=1}^{n}(x_i-\bar{x})(y_i-\bar{y})}
+{\sqrt{\sum_{i=1}^{n}(x_i-\bar{x})^2\sum_{i=1}^{n}(y_i-\bar{y})^2}}.
+\end{equation}
+It measures the direction and strength of linear association. The three correlations use the same records with complete geometry.
+Aspect ratio is derived from dimensions, so some association is expected.
+Complete records can have a different class balance from the full data.
+
+
+\section{Comparing Means and Testing Associations}
+Welch's two-sample $t$-test compares independent means while allowing the
+group variances to differ. Its standard error is
+$\sqrt{s_1^2/n_1+s_2^2/n_2}$ and its degrees of freedom use the
+Welch--Satterthwaite approximation \citep{rWelch}. We apply the test
+to observed image widths in the training set.
+
+Pearson's chi-square statistic for a contingency table is
+\(\chi^2=\sum_{ij}(O_{ij}-E_{ij})^2/E_{ij}\), where
+\(E_{ij}=n_{i\cdot}n_{\cdot j}/n\) under independence. For a two-by-two
+table, the test uses one degree of freedom and Cramer's
+\(V=\sqrt{\chi^2/n}\) measures association size. Chapter~5 uses the
+uncorrected statistic and checks that expected counts are at least five.
+Term-level tests use the Benjamini--Hochberg procedure across eligible
+tests to address false discoveries under its applicable assumptions
+\citep{benjamini1995}. The results remain exploratory because terms can
+be correlated or share identical occurrence patterns.
+
+\section{Logistic Regression and Nonlinear Geometry}
+With \(Y=1\) denoting an advertisement, a binomial logistic model relates
+the probability \(p=\Pr(Y=1\mid X)\) to predictors through
+\(\log[p/(1-p)]=\beta_0+\sum_j\beta_jX_j\)
+\citep{rGLM}. In the main effects model, a unit increase in a predictor
+multiplies conditional odds by \(\exp(\beta_j)\). A unit increase in
+\(\log_2\) width or height is a doubling of the original dimension.
+An approximate 95\% Wald interval is obtained by exponentiating
+\(\hat\beta_j\pm1.96\,\mathrm{SE}(\hat\beta_j)\).
+The likelihood ratio test for the added terms compares the drop in
+deviance of the nested models against a chi-square approximation.
+The tests assume independent observations and do not adjust for screening.
+
+The extended geometry model uses natural cubic spline bases with three
+degrees of freedom for each log dimension, a wide-banner indicator, and
+the product of the log dimensions. Splines allow curved effects on
+log odds and become linear beyond the boundary knots \citep{rSplines}.
+The interaction permits the change in log odds associated with one
+dimension to depend on the other. The modelling code estimates missing
+dimension medians and the mode of Local from each fitting sample.
+The processed CSV used for descriptive analysis keeps the original
+missing values.
+
+\section{Grouped Validation and Performance Measures}
+Groups defined by identical feature vectors are kept together in the
+holdout and the five training folds. Each out-of-fold (OOF) score comes
+from a model fitted without the record's fold. Imputation and term
+selection are repeated inside each fold. Thresholds maximize OOF recall
+among cutoffs reaching precision 0.70 on training predictions and are
+then held fixed on the test set.
+
+With advertisements as positives, precision is \(TP/(TP+FP)\) and
+recall is \(TP/(TP+FN)\). The precision--recall curve shows the tradeoff across thresholds and is
+particularly relevant when positives are uncommon \citep{davis2006}.
+Average precision sums \(P_k(R_k-R_{k-1})\) over distinct score
+cutoffs, with tied scores admitted together. ROC-AUC measures ranking
+across positive and negative records, with half credit for tied scores.
+Neither ranking measure certifies performance at a specific cutoff.
+
+
+\section{Uncertainty in Predictive Comparisons}
+Wilson intervals invert the binomial score test. In the test set the
+precision denominator is the number flagged, and the recall denominator
+is the number of ads \citep{rWilson}. The exact McNemar test compares
+paired decisions using a two-sided binomial test with probability $1/2$
+on the two discordant counts \citep{rBinomial}. We compare ads and
+non-ads separately to distinguish detections from false alarms.
+
+The paired bootstrap resamples test records within each class, keeping
+their two scores together \citep{efron1979}. The 2.5th and 97.5th percentiles
+of 2,000 AP differences give an interval conditional on this split and fit.

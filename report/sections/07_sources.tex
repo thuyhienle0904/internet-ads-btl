@@ -1,21 +1,32 @@
-% Owners: Tường (dataset link/details), Phúc (code/reproducibility guidance), Tân (final check)
-\section{Data and Reproduction}
-
-The raw input is \texttt{add.csv} from the
+\section{Dataset and Code Provenance}
+The input is \texttt{add.csv} from the Kaggle
 \href{https://www.kaggle.com/datasets/uciml/internet-advertisements-data-set/data}{Internet Advertisements Data Set}.
-The dataset creator is Nicholas Kushmerick; the original dataset is
-identified by \href{https://doi.org/10.24432/C5V011}{DOI 10.24432/C5V011}.
-The analysis source is maintained in the
-\href{https://github.com/thuyhienle0904/internet-ads-btl}{group repository}.
-The repository contains the preprocessing and descriptive-analysis scripts
-and the figures embedded in this report.
+The original UCI distribution supplies \texttt{ad.data},
+\texttt{ad.names}, and \texttt{ad.DOCUMENTATION}
+\citep{kushmerick1999}. The Kaggle CSV includes a header and exported
+index. The term IDs follow the numeric headers, and their names were
+verified against the original UCI column order.
 
-The R preprocessing entry point is \texttt{scripts/01\_data\_setup.R},
-which retains all original features and missing values, removes exact
-duplicates across features and label, and adds the missingness flag.
-The R EDA entry point is \texttt{scripts/02\_eda\_descriptive.R}.
-It writes tables and figures to \texttt{output/eda-r/}.
+The group's
+\href{https://github.com/thuyhienle0904/internet-ads-btl}{GitHub repository}
+requires access. The submission includes \texttt{analysis.R}, a single R
+script with the original term-name mapping embedded, so the analysis can
+be reproduced without repository access.
 
-The nine figures used by LaTeX are copied to \path{report/figures/eda/}.
-The integrated scripts and synthetic EDA checks ran successfully
-with R 4.6.2. The processed values were compared with the v2 handoff.
+\section{Reproduction}
+Place the unmodified \texttt{add.csv} in \path{data/raw/}. Run the
+submitted \texttt{analysis.R} from that project root using base R.
+The verification used R 4.6.2 on Windows with a UTF-8 locale.
+\begin{lstlisting}[language={},caption={Command for reproducing the submitted analysis.}]
+Rscript --encoding=UTF-8 analysis.R
+\end{lstlisting}
+The pipeline writes the cleaned dataset, column-name map, and audit
+tables to \path{data/processed/}. EDA and inference outputs are written
+to \path{output/eda-r/} and \path{output/inference/}. The split audit
+records the input checksum and seed. The repository's equivalent
+entry point is \path{scripts/run_all.R}, which reads
+\path{data/reference/ad.names}.
+
+For the one-file LaTeX submission, extract the supplied image archive
+next to \path{report.tex} and compile with PDFLaTeX. In the repository,
+\path{report/build.ps1} builds \path{report/thesis.tex} using MiKTeX and BibTeX.

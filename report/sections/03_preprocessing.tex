@@ -12,7 +12,7 @@ The first occurrence is retained, removing 856 redundant rows.
 Three original feature vectors occur with both class labels and are
 retained because the label forms part of the duplicate key.
 
-\begin{lstlisting}[style=edaR]
+\begin{lstlisting}[style=edaR,aboveskip=4pt,belowskip=4pt]
 # original contains the feature and label columns, excluding row_id.
 duplicate <- duplicated(original)
 keep <- !duplicate
@@ -29,6 +29,7 @@ as a result of removing duplicate rows.
 \begin{table}[htbp]
 \centering
 \caption{Missing values before and after deduplication.}
+\label{tab:preprocessing-missing}
 \begin{tabular}{lrr}
 \toprule
 Feature & Raw & Processed\\
@@ -41,21 +42,7 @@ Local & 15 & 11\\
 \end{tabular}
 \end{table}
 
-The derived variable \texttt{missing\_size} equals 1 when any original
-feature is missing and 0 otherwise. It flags 499 retained records.
-Of these, 492 lack at least one of the three geometric variables and
-seven lack only Local. The field name is retained from the preprocessing
-schema.
-
-\begin{lstlisting}[style=edaR]
-# parsed contains only the 1,558 original features.
-processed$missing_size <- as.integer(rowSums(is.na(parsed)) > 0)
-\end{lstlisting}
-
-\section{Output and Validation}
-
-The processed dataset contains 2,423 rows and 1,561 columns, with
-386 advertisements and 2,037 non-advertisements. The R script exports
-the processed CSV, data dictionary, class counts, missingness summaries,
-and a row-level audit of the original indices and retention decisions.
-This dataset is the input to Chapter~4.
+The \texttt{missing\_size} flag marks any original feature missing.
+It flags 499 retained records, including 492 missing a geometric value
+and seven missing only Local. The script exports 2,423 rows and 1,561
+columns, a data dictionary and audit tables for Chapter~4.

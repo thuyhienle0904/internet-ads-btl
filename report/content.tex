@@ -1,49 +1,38 @@
-% Shared document body. Do not add report content here; write in sections/ instead.
+% Shared report structure. Chapter text is kept in sections/.
 \begin{document}
+\hypersetup{pageanchor=false}
 \coverpage
-
 \frontmatter
-% Uncomment only if the group needs these pages and has replaced template text.
-%\include{chapters/front/declaration}
-%\include{chapters/front/acknowledge}
-%\include{chapters/front/abstract}
-
-\tableofcontents
-\clearpage
+\hypersetup{pageanchor=true}
+\settocdepth{chapter}
+\tableofcontents*
 \listoftables
-\clearpage
 \listoffigures
 
 \mainmatter
 \counterwithin{equation}{section}
-\counterwithin{table}{section}
-\counterwithin{figure}{section}
-
-\chapter{Dataset Overview}
-\include{sections/01_overview}
-
+\counterwithin{table}{chapter}
+\counterwithin{figure}{chapter}
+\chapter{Dataset Overview and Objective}
+\label{chap:overview}
+\input{sections/01_overview}
 \chapter{Background}
-\include{sections/02_background}
-
+\label{chap:background}
+\input{sections/02_background}
 \chapter{Data Preprocessing}
-\include{sections/03_preprocessing}
-
+\label{chap:preprocessing}
+\input{sections/03_preprocessing}
 \chapter{Descriptive Statistics}
-\include{sections/04_descriptive}
-
-\chapter{Statistical Inference}
-\include{sections/05_inference}
-
+\label{chap:eda}
+\input{sections/04_descriptive}
+\chapter{Statistical Inference and Model Evaluation}
+\input{sections/05_inference}
 \chapter{Discussion and Future Work}
-\include{sections/06_discussion}
-
+\input{sections/06_discussion}
 \chapter{Data and Code Sources}
-\include{sections/07_sources}
-
-\chapter{References}
-\include{sections/08_references}
-\bibliographystyle{plain}
-\bibliography{refs/references}
-
+\input{sections/07_sources}
+\chapter{Team Contributions}
+\input{sections/09_contributions}
+\input{sections/08_references}
 \backmatter
 \end{document}

@@ -1,97 +1,42 @@
-% Owner: Tân. Numbers come from Chapter 5 (output/inference/).
+% Evaluation synthesis based on the verified results from Chapter 5.
 \section{Main Findings}
-\begin{itemize}
-\item \textbf{Width is the main size signal.} Among images with an observed
-  width, ads are wider than non-ads by about 201~px on average (95\% CI 181
-  to 222~px). With height, Local and missingness held fixed, each doubling of
-  width multiplies the odds of an ad by about 5.2. There is no evidence of a
-  height association once width is known.
-\item \textbf{Local has a modest association.} Images with Local~=~1 have
-  about 1.55 times the odds of being an ad, with the other features held
-  fixed.
-\item \textbf{Missingness is a weak signal.} Records with a missing feature
-  value are less often ads (11.0\% against 17.3\%), but the association is
-  very weak (Cram\'er's $V=0.071$). In the logistic model its coefficient
-  depends on the value used to fill the missing sizes, so it does not
-  describe missingness itself.
-\item \textbf{The words around an image carry the most information.} The
-  strongest terms read like advertising: \texttt{url*ads},
-  \texttt{ancurl*click}, \texttt{ancurl*com} and \texttt{alt*click}. Adding
-  six terms to the main-effects model raises test average precision from
-  0.594 to 0.795 (gain 0.201, 95\% CI 0.092 to 0.318). At its threshold, the
-  term model catches 23 more of the 77 test ads (65 against 42); it also
-  flags 20 more non-ads, because its threshold was set lower to reach this
-  recall.
-\item \textbf{A curved size effect improves ranking, but not decisions at
-  the chosen threshold.} The format + interaction model raises test average
-  precision by 0.090 (95\% CI 0.039 to 0.145), but at its threshold it
-  catches only 3 more ads, a difference consistent with chance.
-\end{itemize}
+Among training records with observed width, ads are wider by 201.5~px
+on average (95\% CI [181.4, 221.6]). In the adjusted main-effects model,
+doubling width multiplies estimated ad odds by 5.16. Local has a
+smaller positive association. The marginal association of the
+any-missing flag is weak ($V=0.071$), and its adjusted estimate should
+be interpreted in light of median and mode imputation.
 
-\section{Strengths of the Methods}
-\begin{itemize}
-\item \textbf{An honest test set.} Exact duplicates were removed before the
-  analysis, and records with identical features were kept on one side of
-  the split. The test set therefore measures performance on records the
-  models have not seen.
-\item \textbf{No test data in fitting or tuning.} Missing-value imputation,
-  term selection, model fitting and decision thresholds all used training
-  data only, inside each cross-validation fold where needed, and were frozen
-  before the test set was used. (The exploratory analysis in Chapter~4 did
-  look at all records; see the limitations.)
-\item \textbf{Interpretable models.} Logistic regression gives odds ratios
-  with confidence intervals, so each conclusion states both a direction and
-  a size.
-\item \textbf{Uncertainty is shown, not hidden.} Confidence intervals,
-  McNemar tests and bootstrap intervals separate the gains that are clearly
-  real (the terms) from those that may be due to chance (the extra ads
-  caught by the curved size effect).
-\item \textbf{Missingness kept as information.} The \texttt{missing\_size}
-  flag allowed us to test whether missing values relate to ad status,
-  instead of hiding them by filling them in.
-\end{itemize}
+The model with six terms raises held-out AP from 0.594 to 0.795
+(gain 0.201, 95\% CI [0.092, 0.318]). At the selected thresholds,
+it catches 65 of 77 ads, 23 more than the main-effects model, and
+flags 42 non-ads, 20 more than the baseline. Test precision is
+0.607 (95\% Wilson CI [0.51, 0.69]), below the training target of
+0.70. Higher recall comes with more false alerts at these thresholds.
 
-\section{Limitations}
-\begin{itemize}
-\item \textbf{One small test set.} All test results rest on one split with
-  77 ads, so intervals are wide. A different split could change the
-  smaller differences.
-\item \textbf{Terms chosen by the data.} The six terms were selected because
-  they differ most between classes, and the exploratory analysis in
-  Chapter~4 had already shown the same indicators on all records, including
-  the later test records. Their tests describe strong associations in this
-  dataset; they do not confirm a hypothesis fixed in advance.
-\item \textbf{Overlapping terms and near-separation.} The three \texttt{alt}
-  terms nearly always occur together, so their separate odds ratios are
-  imprecise. Some term combinations occur almost only among ads, which makes
-  the odds ratios very large and their Wald intervals unreliable.
-\item \textbf{The precision target was not kept on new records.} The term
-  model reached a training precision of 0.70, but its test precision
-  interval, [0.51, 0.69], lies just below that target.
-\item \textbf{Independence and representativeness.} The tests assume
-  independent records, but several images can come from the same web page
-  or site, and only exact duplicates were removed. According to the UCI
-  documentation, the data were collected in 1998, and advertising formats
-  have changed since then.
-\item \textbf{Observed sizes only.} The width test uses records with an
-  observed width, and missingness differs between the classes, so its
-  result may not generalize to images whose dimensions are missing.
-\end{itemize}
+The format and interaction model raises test AP by 0.090
+(95\% CI [0.039, 0.145]). It detects three extra ads, with insufficient
+evidence of a change in detections at the chosen thresholds
+(exact McNemar $p=0.25$). Splines, the banner indicator and the
+interaction enter together, so this comparison cannot estimate
+their individual contributions.
+
+\section{Strengths and Limitations}
+Grouping identical feature vectors prevents overlap between train and
+test. Imputation, term selection and threshold tuning use training data,
+with imputation and selection repeated within each fold. Paired tests
+and intervals quantify performance differences on the same test records.
+The held-out results still come from one split with 77 ads, and EDA
+included the full dataset before modelling. The term associations
+are exploratory.
+
+The strongest \texttt{alt} indicators overlap, and near-separation makes some
+Wald odds-ratio intervals unstable. Related images may come from
+the same page or website, which the CSV cannot identify. The width
+test excludes records without observed width, and the 1998 UCI
+collection may differ from current web images \citep{kushmerick1999}.
 
 \section{Suggested Extensions}
-\begin{itemize}
-\item \textbf{Confirm a few terms chosen in advance.} Fix a small set of
-  terms by reasoning before looking at the data (for example ``ads'' and
-  ``click'') and test them on new data, so that the result is confirmatory.
-\item \textbf{Use all terms with penalized regression.} Penalized logistic
-  regression, such as the elastic net (which combines the variable selection
-  of the lasso with the shrinkage of ridge regression), can include all
-  1,554 terms at once. It keeps groups of overlapping terms stable and
-  prevents the extreme odds ratios caused by near-separation.
-\item \textbf{Repeat the split.} Repeated grouped cross-validation would
-  show how much the test results vary between splits, instead of relying on
-  one split.
-\item \textbf{Set the threshold by costs.} In practice, the threshold should
-  reflect the relative cost of a missed ad and of a false alarm, and it
-  should be checked again on recent data from other websites.
-\end{itemize}
+On new data, use page identifiers for grouped validation, confirm
+prespecified terms, and assess all features with penalized logistic regression.
+Choose an operating threshold from the costs of missed ads and false alarms.
