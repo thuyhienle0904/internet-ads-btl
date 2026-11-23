@@ -398,9 +398,9 @@ test AP from 0.594 to 0.795, a gain of 0.201 (95\% CI [0.092, 0.318]). The
 term model catches every ad that the main-effects model catches plus 23 more:
 65 of 77 against 42 of 77 (McNemar $p<0.001$). Its recall interval,
 [0.75, 0.91], does not overlap that of the main-effects model,
-[0.43, 0.65]. It also flags 20 more non-ads (42 against 22, $p<0.001$), but
-this follows from its lower threshold (0.14 against 0.40), which was chosen
-to reach the higher recall. At the same recall, the term model has higher
+[0.43, 0.65]. At their selected thresholds, the term model also flags
+20 more non-ads on the test set (42 versus 22, exact McNemar $p<0.001$).
+At the same recall, the term model has higher
 precision than the main-effects model for every recall from 0.08 to 0.96 on
 the test set and from 0.01 to 0.97 on the training OOF predictions
 (Figure~\ref{fig:infer-pr}); it is lower only at the extreme ends of the
