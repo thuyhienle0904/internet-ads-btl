@@ -41,8 +41,6 @@ draw_png <- function(name, width, height, plot_fn) {
   png(file.path(figure_dir, name), width = width, height = height, res = 150)
   tryCatch(plot_fn(), finally = dev.off())
 }
-colors <- c(main = "#0072B2", format_interaction = "#D55E00")
-model_labels <- c(main = "Main effects", format_interaction = "Format + interaction")
 
 # Q1: show conditional class rates with denominators alongside the test table.
 missing_table <- data.frame(
@@ -85,18 +83,52 @@ draw_png("adjusted_odds_ratios.png", 1200, 780, function() {
   axis(2, at = y, labels = or$label, las = 1)
 })
 
-# Q3: PR curves use the true labels, showing both train OOF and locked test.
-pr <- do.call(rbind, lapply(c("train_oof", "test"), function(sample) {
+# Q3: one reference model and two extensions of it. The term pipeline's
+# baseline equals the main-effects model (checked in 04_evaluation.R), so it
+# appears once here.
+models <- c(main = "Main effects", format_interaction = "Format + interaction",
+            with_terms = "Main effects + six terms")
+colors <- c(main = "#0072B2", format_interaction = "#D55E00", with_terms = "#009E73")
+comparison <- rbind(evaluation[evaluation$model %in% c("main", "format_interaction"), ],
+                    term_evaluation[term_evaluation$model == "with_terms", ])
+comparison$label <- models[comparison$model]
+write.csv(comparison, file.path(table_dir, "model_comparison.csv"), row.names = FALSE)
+
+scores_for <- function(sample) {
   d <- if (sample == "test") test else train
-  do.call(rbind, lapply(names(colors), function(model) {
-    cbind(sample = sample, model = model,
-          precision_recall_points(d$Ad, d[[model]]))
+  terms <- if (sample == "test") term_test else term_train
+  terms <- terms[match(d$row_id, terms$row_id), ]
+  list(y = d$Ad, main = d$main, format_interaction = d$format_interaction,
+       with_terms = terms$with_terms)
+}
+pr <- do.call(rbind, lapply(c("train_oof", "test"), function(sample) {
+  s <- scores_for(sample)
+  do.call(rbind, lapply(names(models), function(model) {
+    cbind(sample = sample, model = model, precision_recall_points(s$y, s[[model]]))
   }))
 }))
 write.csv(pr, file.path(table_dir, "precision_recall_points.csv"), row.names = FALSE)
+draw_png("precision_recall_curves.png", 1600, 800, function() {
+  par(mfrow = c(1, 2), mar = c(4.5, 4.5, 3, 1.5), cex.main = 1.25, cex.lab = 1.15, cex.axis = 1.05)
+  for (sample in c("train_oof", "test")) {
+    n_ads <- sum(scores_for(sample)$y)
+    plot(c(0, 1), c(0, 1), type = "n", xlab = "Ad recall", ylab = "Ad precision",
+         main = sprintf("%s (%d ads)", if (sample == "test") "Held-out test"
+                        else "Training, out-of-fold", n_ads))
+    abline(h = unique(comparison$min_precision), lty = 3, col = "#666666")
+    for (model in names(models)) {
+      d <- pr[pr$sample == sample & pr$model == model, ]
+      lines(c(0, d$recall), c(1, d$precision), col = colors[model], lwd = 2)
+    }
+    ap <- comparison$average_precision[match(paste(names(models), sample),
+                                             paste(comparison$model, comparison$sample))]
+    legend("bottomleft", sprintf("%s (AP %.3f)", models, ap), col = colors, lwd = 2,
+           bty = "o", bg = "white", box.col = "white", cex = .95)
+  }
+})
 
 # The 2 x 2 confusion matrices expose class imbalance better than accuracy.
-test_metrics <- evaluation[evaluation$sample == "test", ]
+test_metrics <- comparison[comparison$sample == "test", ]
 confusion <- do.call(rbind, lapply(seq_len(nrow(test_metrics)), function(i) {
   r <- test_metrics[i, ]
   data.frame(model = r$model, actual = c("Ad", "Ad", "Non-Ad", "Non-Ad"),
@@ -104,92 +136,32 @@ confusion <- do.call(rbind, lapply(seq_len(nrow(test_metrics)), function(i) {
              count = c(r$tp, r$fn, r$fp, r$tn))
 }))
 write.csv(confusion, file.path(table_dir, "test_confusion_counts.csv"), row.names = FALSE)
-write.csv(evaluation, file.path(table_dir, "model_comparison.csv"), row.names = FALSE)
-draw_png("test_confusion_matrices.png", 1400, 760, function() {
-  par(mfrow = c(1, 2), mar = c(8, 5, 4, 3))
-  for (model in names(colors)) {
+draw_png("test_confusion_matrices.png", 2100, 800, function() {
+  par(mfrow = c(1, 3), mar = c(10, 5.5, 4, 2), cex.main = 1.6, cex.lab = 1.4, cex.axis = 1.3)
+  for (model in names(models)) {
     r <- test_metrics[test_metrics$model == model, ]
     z <- matrix(c(r$tp, r$fn, r$fp, r$tn), 2, 2, byrow = TRUE)
     plot(c(.5, 2.5), c(.5, 2.5), type = "n", axes = FALSE, xlab = "",
-         ylab = "Actual", main = sprintf("%s | test", model_labels[model]))
+         ylab = "Actual", main = models[model])
     for (row in 1:2) for (col in 1:2) {
       rect(col - .48, 2 - row + .52, col + .48, 2 - row + 1.48,
            col = if (row == col) "#C7E9C0" else "#FDD0A2", border = "white")
-      text(col, 3 - row, z[row, col], cex = 1.7)
+      text(col, 3 - row, z[row, col], cex = 2.4)
     }
     axis(1, 1:2, c("Ad", "Non-Ad"))
     axis(2, 2:1, c("Ad", "Non-Ad"), las = 1)
-    mtext("Predicted class", side = 1, line = 2.7)
-    mtext(sprintf("Precision %.3f | Recall %.3f | F2 %.3f",
-                  r$precision, r$recall, r$f2), side = 1, line = 5, cex = .85)
-  }
-})
-
-# Term ablation: paired PR panels make ranking gains visible at each recall.
-term_colors <- c(baseline = "#0072B2", with_terms = "#D55E00")
-term_labels <- c(baseline = "No terms", with_terms = "With six terms")
-term_pr <- do.call(rbind, lapply(c("train_oof", "test"), function(sample) {
-  d <- if (sample == "test") term_test else term_train
-  do.call(rbind, lapply(names(term_colors), function(model) {
-    cbind(sample = sample, model = model,
-          precision_recall_points(d$Ad, d[[model]]))
-  }))
-}))
-write.csv(term_pr, file.path(table_dir, "term_precision_recall_points.csv"),
-          row.names = FALSE)
-draw_png("precision_recall_curves.png", 1500, 1400, function() {
-  par(mfrow = c(2, 2), mar = c(4, 4, 3, 1.5), oma = c(0, 0, 1, 0))
-  for (comparison in c("geometry", "terms")) {
-    curve <- if (comparison == "geometry") pr else term_pr
-    metric <- if (comparison == "geometry") evaluation else term_evaluation
-    palette <- if (comparison == "geometry") colors else term_colors
-    labels <- if (comparison == "geometry") model_labels else term_labels
-    for (sample in c("train_oof", "test")) {
-      plot(c(0, 1), c(0, 1), type = "n", xlab = "Ad recall",
-           ylab = "Ad precision",
-           main = sprintf("%s | %s",
-                          if (comparison == "geometry") "Geometry models" else "Term ablation",
-                          if (sample == "test") "held-out test" else "train OOF"))
-      abline(h = unique(metric$min_precision), lty = 3, col = "#666666")
-      for (model in names(palette)) {
-        d <- curve[curve$sample == sample & curve$model == model, ]
-        lines(c(0, d$recall), c(1, d$precision), col = palette[model], lwd = 2)
-      }
-      legend("topright", vapply(names(palette), function(model) {
-        ap <- metric$average_precision[metric$sample == sample & metric$model == model]
-        sprintf("%s (AP %.3f)", labels[model], ap)
-      }, character(1)), col = palette, lty = 1, lwd = 2,
-      bty = "o", bg = "white", box.col = "white", cex = .76)
-    }
-  }
-})
-
-term_test_metrics <- term_evaluation[term_evaluation$sample == "test", ]
-draw_png("term_test_confusion_matrices.png", 1400, 760, function() {
-  par(mfrow = c(1, 2), mar = c(8, 5, 4, 3))
-  for (model in names(term_colors)) {
-    r <- term_test_metrics[term_test_metrics$model == model, ]
-    z <- matrix(c(r$tp, r$fn, r$fp, r$tn), 2, 2, byrow = TRUE)
-    plot(c(.5, 2.5), c(.5, 2.5), type = "n", axes = FALSE, xlab = "",
-         ylab = "Actual", main = sprintf("%s | held-out test", term_labels[model]))
-    for (row in 1:2) for (col in 1:2) {
-      rect(col - .48, 2 - row + .52, col + .48, 2 - row + 1.48,
-           col = if (row == col) "#C7E9C0" else "#FDD0A2", border = "white")
-      text(col, 3 - row, z[row, col], cex = 1.7)
-    }
-    axis(1, 1:2, c("Ad", "Non-Ad"))
-    axis(2, 2:1, c("Ad", "Non-Ad"), las = 1)
-    mtext("Predicted class", side = 1, line = 2.7)
-    mtext(sprintf("Precision %.3f | Recall %.3f | F2 %.3f",
-                  r$precision, r$recall, r$f2), side = 1, line = 5, cex = .85)
+    mtext("Predicted class", side = 1, line = 3, cex = 1.1)
+    mtext(sprintf("Precision %.2f [%.2f, %.2f]", r$precision, r$precision_lower,
+                  r$precision_upper), side = 1, line = 5.4, cex = 1.15)
+    mtext(sprintf("Recall %.2f [%.2f, %.2f]", r$recall, r$recall_lower, r$recall_upper),
+          side = 1, line = 7.2, cex = 1.15)
   }
 })
 
 figure_files <- c("missingness_ad_rates.png", "adjusted_odds_ratios.png",
-                  "precision_recall_curves.png", "test_confusion_matrices.png",
-                  "term_test_confusion_matrices.png")
+                  "precision_recall_curves.png", "test_confusion_matrices.png")
 report_dir <- file.path(root, "report", "figures", "inference")
 dir.create(report_dir, recursive = TRUE, showWarnings = FALSE)
 if (!all(file.copy(file.path(figure_dir, figure_files), report_dir,
                    overwrite = TRUE))) stop("Could not publish inference figures.")
-message("Created and published 5 inference figures; wrote 6 CSV tables.")
+message("Created and published ", length(figure_files), " inference figures; wrote 5 CSV tables.")

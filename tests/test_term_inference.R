@@ -36,3 +36,19 @@ for (model in c("baseline", "with_terms")) {
             test_result$fp == sum(test[[model]] >= threshold & test$Ad == 0))
 }
 message("Term inference split and metrics checks passed.")
+
+# Term names come from data/reference/ad.names in original column order.
+source(file.path(root, "scripts", "term_names.R"))
+term_label <- load_term_names(root)
+stopifnot(length(term_label) == 1554L,
+          term_label[["term_0004"]] == "url*images+buttons",
+          term_label[["term_1243"]] == "ancurl*com",
+          identical(unname(term_label[selected$term]), selected$name))
+# One baseline: the term pipeline's model without terms is the main-effects model.
+main_test <- read.csv(file.path(out, "test_predictions.csv"))
+stopifnot(isTRUE(all.equal(test$baseline, main_test$main[match(test$row_id, main_test$row_id)])))
+comparisons <- read.csv(file.path(out, "model_comparison_tests.csv"))
+stopifnot(nrow(comparisons) == 2L,
+          all(comparisons$ap_difference_lower <= comparisons$ap_difference),
+          all(comparisons$ap_difference <= comparisons$ap_difference_upper))
+message("Term names and shared-baseline checks passed.")

@@ -1,6 +1,8 @@
 root <- dirname(dirname(normalizePath(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1]))))
 out <- file.path(root, "output", "inference")
 dir.create(out, recursive = TRUE, showWarnings = FALSE)
+source(file.path(root, "scripts", "term_names.R"))
+term_label <- load_term_names(root)
 
 read <- function(path) {
   d <- read.csv(path, check.names = FALSE, stringsAsFactors = FALSE, na.strings = c("NA", "?", ""))
@@ -48,6 +50,22 @@ write.csv(data.frame(n = sum(tab), statistic = unname(chi$statistic), df = unnam
                      ad_rate_observed = tab["0", "ad."] / sum(tab["0", ])),
           file.path(out, "missingness_chisquare.csv"), row.names = FALSE)
 
+# Two-sample comparison of observed widths on training data (Welch t-test).
+# Width is right-skewed, but each class has hundreds of observed widths, so
+# the sample means are close to normal.
+width_ad <- train$Width[train$IsAds == "ad." & !is.na(train$Width)]
+width_nonad <- train$Width[train$IsAds == "nonad." & !is.na(train$Width)]
+welch <- t.test(width_ad, width_nonad, var.equal = FALSE)
+write.csv(data.frame(n_ad = length(width_ad), n_nonad = length(width_nonad),
+                     mean_ad = mean(width_ad), mean_nonad = mean(width_nonad),
+                     sd_ad = sd(width_ad), sd_nonad = sd(width_nonad),
+                     median_ad = median(width_ad), median_nonad = median(width_nonad),
+                     difference = mean(width_ad) - mean(width_nonad),
+                     lower_95 = welch$conf.int[1], upper_95 = welch$conf.int[2],
+                     t = unname(welch$statistic), df = unname(welch$parameter),
+                     p_value = welch$p.value),
+          file.path(out, "width_welch_test.csv"), row.names = FALSE)
+
 prepare <- function(d, medians) {
   d$Ad <- as.integer(d$IsAds == "ad.")
   for (nm in c("Height", "Width", "Aspect_Ratio")) {
@@ -61,11 +79,13 @@ prepare <- function(d, medians) {
   d$wide_banner <- as.integer(d$Aspect_Ratio >= 6)
   d
 }
+# The one reference model for both comparisons in Chapter 5:
+# geometry shape (fit_pair) and term indicators (fit_term_models).
+base_formula <- Ad ~ log2_Height + log2_Width + Local + missing_size
 fit_pair <- function(d) {
   med <- vapply(c("Height", "Width", "Aspect_Ratio"), function(nm) median(d[[nm]], na.rm = TRUE), numeric(1))
   med <- c(med, Local = as.numeric(names(which.max(table(d$Local)))))
   x <- prepare(d, med)
-  base_formula <- Ad ~ log2_Height + log2_Width + Local + missing_size
   rich_formula <- Ad ~ splines::ns(log2_Height, df = 3) +
     splines::ns(log2_Width, df = 3) + wide_banner +
     log2_Height:log2_Width + Local + missing_size
@@ -110,9 +130,9 @@ or <- data.frame(term = rownames(s), coefficient = s[, 1], std_error = s[, 2],
 write.csv(or, file.path(out, "main_effect_odds_ratios.csv"), row.names = FALSE)
 message("Inference complete: ", nrow(train), " train records from data/processed; test labels unused for fitting.")
 
-# Anonymous term inference: select on training data and repeat selection inside
-# each grouped fold. The existing split and folds above are shared by design.
-term_names <- sprintf("term_%04d", 4:1557)
+# Term inference: select on training data and repeat selection inside each
+# grouped fold. The existing split and folds above are shared by design.
+term_names <- names(term_label)
 if (!all(term_names %in% names(data))) stop("Term columns are missing.")
 if (anyNA(data[term_names]) || any(!as.matrix(data[term_names]) %in% 0:1))
   stop("Term indicators must be complete binary values.")
@@ -128,7 +148,8 @@ select_terms <- function(d, n = 6L) {
                                  -support[eligible], term_names[eligible])], n)]
 }
 selected_terms <- select_terms(train)
-write.csv(data.frame(rank = seq_along(selected_terms), term = selected_terms),
+write.csv(data.frame(rank = seq_along(selected_terms), term = selected_terms,
+                     name = term_label[selected_terms], row.names = NULL),
           file.path(out, "term_selected_train.csv"), row.names = FALSE)
 
 term_matrix <- as.matrix(train[term_names])
@@ -144,7 +165,7 @@ term_tests <- lapply(term_candidates, function(j) {
   expected <- outer(rowSums(counts), colSums(counts)) / sum(counts)
   valid <- min(expected) >= 5
   result <- if (valid) suppressWarnings(chisq.test(counts, correct = FALSE)) else NULL
-  data.frame(term = term_names[j], ad_present = counts[1, 1],
+  data.frame(term = term_names[j], name = unname(term_label[j]), ad_present = counts[1, 1],
              nonad_present = counts[2, 1],
              ad_prevalence = counts[1, 1] / sum(term_ad),
              nonad_prevalence = counts[2, 1] / sum(!term_ad),
@@ -169,10 +190,9 @@ fit_term_models <- function(d, chosen) {
                 function(nm) median(d[[nm]], na.rm = TRUE), numeric(1))
   med <- c(med, Local = as.numeric(names(which.max(table(d$Local)))))
   x <- prepare_terms(d, med)
-  baseline <- Ad ~ log2_Height + log2_Width + Aspect_Ratio + Local + missing_size
-  augmented <- reformulate(c(attr(stats::terms(baseline), "term.labels"), chosen),
+  augmented <- reformulate(c(attr(stats::terms(base_formula), "term.labels"), chosen),
                            response = "Ad")
-  fits <- list(baseline = glm(baseline, family = binomial(), data = x),
+  fits <- list(baseline = glm(base_formula, family = binomial(), data = x),
                with_terms = glm(augmented, family = binomial(), data = x))
   if (any(vapply(fits, function(f) !f$converged || anyNA(coef(f)), logical(1))))
     stop("Term logistic fit did not converge or has aliased coefficients.")
@@ -190,7 +210,8 @@ fold_terms <- lapply(1:5, function(k) {
   model <- fit_term_models(train[fold != k, , drop = FALSE], chosen)
   prediction <- predict_term_models(model, train[fold == k, , drop = FALSE])
   for (nm in names(prediction)) term_oof[fold == k, nm] <<- prediction[[nm]]
-  data.frame(fold = k, rank = seq_along(chosen), term = chosen)
+  data.frame(fold = k, rank = seq_along(chosen), term = chosen,
+             name = unname(term_label[chosen]))
 })
 if (anyNA(term_oof)) stop("Incomplete term out-of-fold predictions.")
 write.csv(do.call(rbind, fold_terms), file.path(out, "term_selected_by_fold.csv"), row.names = FALSE)
@@ -205,7 +226,7 @@ write.csv(data.frame(df = joint_terms$Df[2],
           file.path(out, "term_logistic_joint_test.csv"), row.names = FALSE)
 term_coefficients <- summary(final_terms$fits$with_terms)$coefficients[
   selected_terms, , drop = FALSE]
-write.csv(data.frame(term = selected_terms,
+write.csv(data.frame(term = selected_terms, name = unname(term_label[selected_terms]),
                      coefficient = term_coefficients[, 1],
                      odds_ratio = exp(term_coefficients[, 1]),
                      lower_95 = exp(term_coefficients[, 1] -
