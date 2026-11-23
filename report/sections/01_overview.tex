@@ -26,8 +26,8 @@ and missingness by class. It also compares the occurrence rates of the
 
 \section{Selected Variables and Class Encoding}
 
-Table~\ref{tab:selected-variables} documents the class label and the four original variables summarized
-individually in the descriptive analysis. Original identifiers refer to column
+Table~\ref{tab:selected-variables} documents the class label and the original variables used in the
+descriptive analysis. Original identifiers refer to column
 headers, which differ from R's one-based column positions because the
 CSV includes an exported index.
 
@@ -36,7 +36,7 @@ CSV includes an exported index.
 \small
 \caption{Data dictionary for the selected analytical variables.}
 \label{tab:selected-variables}
-\begin{tabular}{@{}llp{0.24\linewidth}p{0.34\linewidth}@{}}
+\begin{tabular}{@{}p{0.13\linewidth}p{0.20\linewidth}p{0.22\linewidth}p{0.36\linewidth}@{}}
 \toprule
 Source header & Variable & Type and unit & Description\\
 \midrule
@@ -44,14 +44,26 @@ Source header & Variable & Type and unit & Description\\
 \texttt{1} & Width & Numeric; pixels & Positive image width.\\
 \texttt{2} & Aspect\_Ratio & Numeric; unitless & Width divided by height.\\
 \texttt{3} & Local & Binary; 0 or 1 & Original binary indicator retained under the reference variable name.\\
+4--1557 & \texttt{term\_0004} to \texttt{term\_1557} & Binary; 0 or 1 & Presence of encoded terms from URLs or text associated with the image.\\
 \texttt{1558} & IsAds & Categorical & Advertisement (\texttt{ad.}) or non-advertisement (\texttt{nonad.}).\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The CSV header alone provides no detailed semantic definition of Local.
-Its binary encoding is retained without attributing additional meaning
-to the indicator. The remaining binary features are preserved in the processed file.
+The Kaggle CSV uses numeric headers. The UCI \texttt{ad.names} file
+provides the original names of all 1,558 features in column order.
+The exported CSV index is excluded when matching these names.
+Each processed \texttt{term\_*} suffix preserves the original
+zero-based Kaggle header. For example, \texttt{term\_1243} corresponds
+to \texttt{ancurl*com}, \texttt{term\_0351} to \texttt{url*ads},
+and \texttt{term\_1399} to \texttt{ancurl*click}.
+A value of 1 indicates the presence of the corresponding encoded pattern.
+
+The data dictionary records this mapping in \texttt{Original\_UCI\_Name}.
+The source mapping is stored in \path{docs/uci_feature_names.csv},
+transcribed in order from the UCI \texttt{ad.names} file.
+Source: \href{https://archive.ics.uci.edu/dataset/51/internet+advertisements}{UCI Internet Advertisements},
+\texttt{ad.names} and \texttt{ad.DOCUMENTATION}.
 
 The output CSV preserves the labels \texttt{ad.} and \texttt{nonad.}.
 Within the R preprocessing script, IsAds is represented as a factor
