@@ -291,6 +291,18 @@ by the number with a recorded value within each class.
 Table~\ref{tab:eda-terms} shows the three largest absolute differences in
 these rates. A positive gap indicates a higher rate among advertisements.
 The suffix of each term identifier is its original Kaggle column number.
+The UCI \texttt{ad.names} file provides the original feature names in
+column order. Matching this order to the Kaggle export identifies
+\texttt{term\_1243} as \texttt{ancurl*com},
+\texttt{term\_0351} as \texttt{url*ads}, and
+\texttt{term\_1399} as \texttt{ancurl*click}.
+The prefixes identify the source of the encoded URL terms.
+A value of 1 records the presence of the corresponding term pattern.
+The name \texttt{ancurl*com} identifies the encoded pattern
+\texttt{com} in an anchor URL.
+
+\noindent Source: \href{https://archive.ics.uci.edu/dataset/51/internet+advertisements}{UCI Internet Advertisements},
+\texttt{ad.names} and \texttt{ad.DOCUMENTATION}.
 
 \begin{table}[H]
 \centering
@@ -299,11 +311,11 @@ The suffix of each term identifier is its original Kaggle column number.
 \label{tab:eda-terms}
 \begin{tabular}{lrrr}
 \toprule
-Indicator & Ad: count (rate) & Nonad: count (rate) & Gap (pp)\\
+Original name (identifier) & Ad: count (rate) & Nonad: count (rate) & Gap (pp)\\
 \midrule
-\texttt{term\_1243} & 167 (43.26\%) & 12 (0.59\%) & 42.68\\
-\texttt{term\_0351} & 123 (31.87\%) & 6 (0.29\%) & 31.57\\
-\texttt{term\_1399} & 111 (28.76\%) & 5 (0.25\%) & 28.51\\
+\shortstack[l]{\texttt{ancurl*com}\\(\texttt{term\_1243})} & 167 (43.26\%) & 12 (0.59\%) & 42.68\\
+\shortstack[l]{\texttt{url*ads}\\(\texttt{term\_0351})} & 123 (31.87\%) & 6 (0.29\%) & 31.57\\
+\shortstack[l]{\texttt{ancurl*click}\\(\texttt{term\_1399})} & 111 (28.76\%) & 5 (0.25\%) & 28.51\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -316,9 +328,8 @@ this indicator alone would miss more than half of the ads.
 
 The rates describe the sample used to rank the indicators.
 For model development, rank features on the training data and assess
-performance on held-out data. The processed dictionary lists the
-column identifiers, while the original wording of the indicators
-is unavailable in the processed file.
+performance on held-out data. Interpretation uses the original UCI
+feature names alongside the identifiers in the processed data.
 
 The results describe the deduplicated dataset and, for measured
 variables, the subsets with observed measurements. Differences in
