@@ -282,17 +282,28 @@ binary_summary <- summarize_binary(
 print(binary_summary[binary_summary$group != "all", ])
 \end{lstlisting}
 
-\section{Anonymous Term Indicators}
+\section{Term Indicators by Class}
 The processed dataset also contains 1,554 binary term indicators,
 \texttt{term\_0004} through \texttt{term\_1557}. Each suffix is the
-original Kaggle column number. The indicators are unnamed flags, so
-their semantic meaning cannot be inferred from the dataset.
+original Kaggle column number. The UCI \texttt{ad.names} file supplies
+the original feature names in column order. Matching this order to the
+Kaggle export identifies \texttt{term\_1243} as \texttt{ancurl*com},
+\texttt{term\_0351} as \texttt{url*ads}, and
+\texttt{term\_1399} as \texttt{ancurl*click}.
+A value of 1 indicates the presence of the corresponding term pattern.
+For example, \texttt{ancurl*com} encodes the pattern \texttt{com}
+in an anchor URL.
+
+\noindent Source: \href{https://archive.ics.uci.edu/dataset/51/internet+advertisements}{UCI Internet Advertisements},
+\texttt{ad.names} and \texttt{ad.DOCUMENTATION}.
+
+
 Only 29,485 of their 3,765,342 cells are one (density 0.783\%).
 The median record has 17 active terms in the Ad class and 9 in the
 Non-Ad class; the respective means are 19.92 and 10.70.
 These counts refer to indicator columns: only 760 distinct 0/1 patterns
 occur among the 1,554 columns, so multiple columns can mark the same
-set of records. This does not identify the underlying words.
+set of records.
 
 \edageometryfigure{term_count_by_class.png}{Distribution of active term indicators per record by class.}{fig:eda-term-counts}
 
@@ -313,11 +324,11 @@ means the term occurs more often among Ad records.
 \label{tab:eda-terms}
 \begin{tabular}{lrrr}
 \toprule
-Term & Ad: count (rate) & Non-Ad: count (rate) & Gap (pp)\\
+Original name (identifier) & Ad: count (rate) & Non-Ad: count (rate) & Gap (pp)\\
 \midrule
-\texttt{term\_1243} & 167 (43.26\%) & 12 (0.59\%) & 42.68\\
-\texttt{term\_0351} & 123 (31.87\%) & 6 (0.29\%) & 31.57\\
-\texttt{term\_1399} & 111 (28.76\%) & 5 (0.25\%) & 28.51\\
+\shortstack[l]{\texttt{ancurl*com}\\(\texttt{term\_1243})} & 167 (43.26\%) & 12 (0.59\%) & 42.68\\
+\shortstack[l]{\texttt{url*ads}\\(\texttt{term\_0351})} & 123 (31.87\%) & 6 (0.29\%) & 31.57\\
+\shortstack[l]{\texttt{ancurl*click}\\(\texttt{term\_1399})} & 111 (28.76\%) & 5 (0.25\%) & 28.51\\
 \bottomrule
 \end{tabular}
 \end{table}
