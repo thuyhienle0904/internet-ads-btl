@@ -1,40 +1,50 @@
-% Project cover. The course fields and roster are defined in settings.tex.
+% Project cover (format of the course cover sample). The course fields and
+% the roster are defined in settings.tex. Columns: ID, name, main responsibility.
 \makeatletter
 \begin{titlingpage}
 \thispagestyle{empty}
+\begin{tikzpicture}[remember picture,overlay]
+  \draw[line width=3pt]($(current page.north west)+(1.4cm,-1.4cm)$) rectangle
+    ($(current page.south east)+(-1.4cm,1.4cm)$);
+  \draw[line width=1pt]($(current page.north west)+(1.5cm,-1.5cm)$) rectangle
+    ($(current page.south east)+(-1.5cm,1.5cm)$);
+\end{tikzpicture}
 \begin{center}
-{\bfseries VIETNAM NATIONAL UNIVERSITY HO CHI MINH CITY\par}
-{\bfseries HO CHI MINH CITY UNIVERSITY OF TECHNOLOGY\par}
-\vspace{0.5cm}
-\ifx\@deptname\@empty Faculty: \rule{8cm}{0.3pt}\else\@deptname\fi\par
+\vspace*{-0.2cm}
+{\normalsize\bfseries VIETNAM NATIONAL UNIVERSITY HO CHI MINH CITY\par}
+{\normalsize\bfseries HO CHI MINH CITY UNIVERSITY OF TECHNOLOGY\par}
+{\normalsize\bfseries \@deptname\par}
 \vspace{0.7cm}
-\includegraphics[width=2.8cm]{graphics/hcmut.png}\par
-\vspace{0.7cm}
-{\Large\bfseries COURSE PROJECT REPORT\par}
+\includegraphics[width=3.4cm]{graphics/hcmut.png}\par
+\vspace{0.9cm}
+{\fontsize{20}{24}\selectfont\bfseries PROBABILITY AND STATISTICS\par}
+\vspace{0.2cm}
+{\fontsize{20}{24}\selectfont\bfseries PROJECT REPORT\par}
 \vspace{0.4cm}
-{\large PROBABILITY AND STATISTICS\par}
-\vspace{0.8cm}
-\ifx\@title\@empty Project title: \rule{9cm}{0.3pt}\else
-{\Large\bfseries\@title}\fi\par
-\end{center}
+{\large\bfseries \@title\par}
 \vspace{0.7cm}
-\noindent Class: \ifx\@stumajor\@empty\rule{9cm}{0.3pt}\else\@stumajor\fi\par
-\medskip\noindent Group: \ifx\@defcouncil\@empty\rule{10.5cm}{0.3pt}\else\@defcouncil\fi\par
-\medskip\noindent Instructor: \ifx\@supervisor\@empty\rule{9.7cm}{0.3pt}\else\@supervisor\fi\par
-\vspace{0.5cm}
-\begin{center}\small
-\newcommand{\teammember}[5]{#1 & #2 & #3 & #4\\}
-\begin{tabularx}{\linewidth}{c >{\raggedright\arraybackslash}X l >{\raggedright\arraybackslash}X}
-\toprule
-No. & Full name & Student ID & Main responsibility\\
-\midrule
+{\normalsize\bfseries GROUP MEMBERS\par}
+\vspace{0.25cm}
+{\small
+\renewcommand{\arraystretch}{1.35}
+\newcommand{\teammember}[5]{#3 & #2 & #4\\ \hline}
+\begin{tabular}{|p{2.1cm}|p{4.2cm}|>{\raggedright\arraybackslash}p{6.0cm}|}
+\hline
+\textbf{Student ID} & \textbf{Student Name} & \textbf{Main Responsibility}\\ \hline
 \projectteam
-\bottomrule
-\end{tabularx}
+\end{tabular}\par}
+\vspace{0.9cm}
+{\normalsize
+\begin{tabular}{@{}r@{\hspace{0.7em}}l@{}}
+\textbf{Subject:}  & Probability and Statistics (MT2013)\\
+\textbf{Class ID:} & \@stumajor\\
+\textbf{Group:}    & \@defcouncil\\
+\textbf{Lecturer:} & \@supervisor\\
+\end{tabular}\par}
 \end{center}
 \vfill
 \begin{center}
-\@reportplace, \ifx\@reporttime\@empty\rule{4cm}{0.3pt}\else\@reporttime\fi
+{\normalsize\bfseries \@reportplace, \@reporttime\par}
 \end{center}
 \end{titlingpage}
 \makeatother
