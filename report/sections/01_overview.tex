@@ -1,5 +1,5 @@
 % Owner: Tường
-\section{Source and Unit of Observation}
+\section{Source, Collection and Unit of Observation}
 
 The Internet Advertisements dataset was obtained from
 \href{https://www.kaggle.com/datasets/uciml/internet-advertisements-data-set/data}{Kaggle}
@@ -9,6 +9,19 @@ Each observation represents an image or image element on a web page.
 The target is whether the image is an advertisement (\texttt{ad}) or
 not (\texttt{nonad}). The task concerns image classification rather
 than advertising expenditure, clicks, or conversions.
+
+According to the UCI documentation, Nicholas Kushmerick created and donated
+the dataset, which was generated between April and July 1998 as a set of
+possible advertisements on Internet pages \citep{kushmerick1999}. Each record
+is one image. It is described by its geometry (height, width and aspect
+ratio, when these are available) and by binary indicators for phrases that
+occur in the URLs around the image, its alternative text, the anchor text and
+the words near the anchor. The indicators form five groups: 457
+\texttt{url}, 495 \texttt{origurl}, 472 \texttt{ancurl}, 111 \texttt{alt}
+and 19 \texttt{caption} terms. The documentation also states that at least
+one geometric feature is missing for about 28\% of the images and that such
+values mean ``unknown''. The creator used the data to learn rules that detect
+advertisements so that they can be removed from web pages.
 
 \section{Dataset Structure}
 
