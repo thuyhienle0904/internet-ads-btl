@@ -9,8 +9,8 @@
   \end{figure}%
 }
 \section{Analysis Sample and Test Design}
-Chapter~5 uses the 2,423 deduplicated records from Chapter~3. A seeded
-80/20 split divides them into 1,938 training records (309 ads) and 485
+Chapter~5 uses the 2,423 deduplicated records from Chapter~3. A seeded,
+class-stratified 80/20 split divides them into 1,938 training records (309 ads) and 485
 held-out test records (77 ads). Records with identical feature values are
 grouped together, and each group is assigned entirely to either the
 training set or the test set, so the test set contains no copy of a
@@ -59,8 +59,8 @@ Non-Ad & 1,269 & 124.2 & 82.1 & 101\\
 interval of [181.4, 221.6]~px ($t=19.73$, $\mathrm{df}\approx 292.9$,
 $p<0.001$).
 
-\textbf{Comment.} The gap is large: the typical non-ad is about 100~px
-wide, so ads are on average more than twice as wide. Ad widths still vary a
+\textbf{Comment.} The gap is large: non-ads average 124~px (median
+101~px), so ads are on average more than 2.5 times as wide. Ad widths still vary a
 lot (SD 162~px), so width alone cannot separate the classes. The test
 compares the classes one feature at a time and uses only the 1,534 training
 records with an observed width.
@@ -71,12 +71,14 @@ Section~\ref{sec:infer-or} checks whether width still matters when the other
 features are taken into account.
 
 \section{Is Missingness Associated with Advertisement Status?}
+\label{sec:infer-missing}
 \textbf{Objective.} Chapter~4 showed that missing feature values are more
 common among non-ads. We test whether \texttt{missing\_size} (any original
 feature missing) and ad status are independent in the population.
 
-\textbf{Method.} Pearson's chi-square test of independence, without
-continuity correction, on the training table
+\textbf{Method.} $H_0$: missingness and ad status are independent;
+$H_1$: they are associated. We use Pearson's chi-square test of independence,
+without continuity correction, on the training table
 (Table~\ref{tab:infer-missing}). The smallest expected count is 66.65, well
 above five, so the chi-square approximation is valid.
 
@@ -97,7 +99,9 @@ Total & 309 & 1,629 & 1,938\\
 \end{table}
 
 \textbf{Result.} The ad rate is 11.0\% when a feature is missing and
-17.3\% otherwise; $\chi^2(1)=9.70$, $p=0.0018$, and Cram\'er's $V=0.071$.
+17.3\% otherwise (equivalently, 14.9\% of training ads and 22.8\% of
+non-ads have a missing value); $\chi^2(1)=9.70$, $p=0.0018$, and
+Cram\'er's $V=0.071$.
 
 \textbf{Comment.} Cram\'er's $V$ measures the strength of the association,
 from 0 (none) to 1 (perfect). The value 0.071 is very weak: the result is
@@ -115,7 +119,7 @@ held fixed.
 
 \textbf{Method.} We fit the logistic regression model
 \[
-  \ln\frac{P(\mathrm{Ad}=1)}{1-P(\mathrm{Ad}=1)}
+  \ln\frac{P(\mathrm{Ad}=1\mid X)}{1-P(\mathrm{Ad}=1\mid X)}
   =\beta_0+\beta_1\log_2\mathrm{Height}+\beta_2\log_2\mathrm{Width}
   +\beta_3\,\mathrm{Local}+\beta_4\,\texttt{missing\_size}
 \]
@@ -123,8 +127,11 @@ on the training records. For each predictor, $H_0:\beta_j=0$ is tested with
 a Wald test. The odds ratio $\mathrm{OR}_j=e^{\beta_j}$ is the factor by
 which the odds of an ad multiply when the predictor increases by one unit
 and the others stay fixed; with base-2 logarithms, one unit means that the
-dimension doubles. Missing dimensions are filled with training medians
-(width: 113.5~px) and missing Local values with the training mode, and
+dimension doubles. The model assumes independent records and straight-line,
+additive effects of $\log_2$ Height and $\log_2$ Width on the log-odds
+scale; Section~\ref{sec:infer-compare} tests whether relaxing this helps.
+Missing dimensions are filled with training medians (height 58.5~px, width
+113.5~px) and missing Local values with the training mode (1), and
 \texttt{missing\_size} records that a value was filled. Aspect ratio is
 left out because on the log scale it is an exact combination of the two
 dimensions: $\log_2(\mathrm{Width}/\mathrm{Height})
@@ -148,13 +155,15 @@ Any feature missing & 1.45 & [0.99, 2.13] & 0.055\\
 \end{tabular}
 \end{table}
 
-\textbf{Result.} Table~\ref{tab:infer-or} shows that each doubling of width
-multiplies the odds of an ad by 5.16 (95\% CI [4.25, 6.25]), and Local~=~1
-by 1.55. For height and for the missingness flag, the interval contains 1.
+\textbf{Result.} Table~\ref{tab:infer-or} shows that, with the other
+predictors held fixed, each doubling of width multiplies the estimated odds
+of an ad by 5.16 (95\% CI [4.25, 6.25]), and Local~=~1 by 1.55 (95\% CI
+[1.10, 2.17]). For height and for the missingness flag, the interval contains 1.
 
 \textbf{Comment.} The missingness OR points in the opposite direction from
 the raw rates in Table~\ref{tab:infer-missing}. The reason is the filling:
-a record with a missing width gets the median width of 113.5~px, so the
+nearly all flagged training records (404 of 418) lack a width and get the
+median width of 113.5~px, so the
 model compares it with complete records of that size, which are mostly
 non-ads, not with all complete records. This coefficient therefore depends
 on the filled-in value and describes no property of missingness itself.
@@ -162,10 +171,6 @@ on the filled-in value and describes no property of missingness itself.
 \textbf{Conclusion.} Width has a strong positive association with ad status
 and Local a modest one. There is no evidence of a height association once
 width is known.
-
-\begin{lstlisting}[style=edaR,caption={Shared main-effects formula used in both model comparisons.}]
-base_formula <- Ad ~ log2_Height + log2_Width + Local + missing_size
-\end{lstlisting}
 
 \section{Do Term Indicators Add Information?}
 The 1,554 binary term indicators record whether a phrase appears in the
@@ -189,7 +194,8 @@ independent of ad status.
 
 \textbf{Method.} Pearson's chi-square test, as in the missingness test. Of
 the 213 terms present in at least 20 training records, 116 have all
-expected counts of at least five and are tested. Testing many terms at once
+expected counts of at least five (with 15.9\% ads in training, this needs a
+term to occur in at least 32 records) and are tested. Testing many terms at once
 produces some significant results by chance alone, so we adjust the 116
 $p$ values with the Benjamini--Hochberg (BH) procedure, which controls the
 expected share of false discoveries among the significant results.
@@ -221,7 +227,9 @@ to 45\% of training ads but in at most 1.2\% of non-ads.
 between the classes, so their very large $\chi^2$ values partly reflect this
 selection. Each test also looks at one term at a time: it cannot tell
 overlapping terms apart or separate a term's effect from that of width.
-Section~\ref{sec:infer-adjusted} addresses this.
+Many columns also repeat the same 0/1 pattern: the 101 significant terms
+form only 74 distinct patterns, so they are not 101 independent signals.
+Section~\ref{sec:infer-adjusted} addresses the overlap and width.
 
 \textbf{Conclusion.} Many terms are associated with ad status. The strongest
 read like advertising: the image file sits in a path containing ``ads'',
@@ -298,7 +306,7 @@ detect ads better:
 \textbf{Method.} Each model gives every record a predicted probability of
 being an ad, and it flags the record as an ad when this probability reaches
 a threshold. To choose the threshold without touching the test set, the
-training records are split into five folds, keeping records with identical
+training records are split into five class-stratified folds, keeping records with identical
 features in the same fold. Each model is fitted on four folds and predicts
 the fifth; repeating this for every fold gives one \emph{out-of-fold} (OOF)
 prediction for every training record. Missing values are filled, and for the
@@ -316,11 +324,10 @@ and a false negative (FN) is a missed ad.
 \emph{Precision} is the share of flagged records that are ads,
 TP/(TP+FP), and \emph{recall} is the share of ads that are flagged,
 TP/(TP+FN). These describe the decisions at the frozen threshold. Average
-precision (AP) and ROC-AUC describe the ranking over all thresholds: AP
-averages the precision obtained as recall increases, and ROC-AUC is the
-probability that a randomly chosen ad scores higher than a randomly chosen
-non-ad, with half credit for a tie. The test ad prevalence of 0.159 provides
-a reference level for the precision--recall curves. Because the test set has only 77 ads, each
+precision (AP) and ROC-AUC (Chapter~2) describe the ranking over all
+thresholds. A model that ranks at random has an expected precision equal to
+the share of ads, 0.159 in the test set, which is also where every
+precision--recall curve ends at recall 1. Because the test set has only 77 ads, each
 test precision and recall is given with a 95\% Wilson confidence interval,
 which behaves better than the usual normal interval for small samples and
 proportions near 0 or 1.
@@ -331,7 +338,8 @@ records that one model flags and the other does not, and tests whether these
 two counts are equal; we apply it separately to ads (ads caught) and to
 non-ads (false alarms). For the difference in AP, a paired, stratified
 percentile bootstrap (2,000 resamples of the test set, with ads and non-ads
-resampled separately) gives a 95\% confidence interval.
+resampled separately) gives a 95\% confidence interval, conditional on the
+fitted models.
 
 \textbf{Result.} Table~\ref{tab:infer-models} gives the results of all three
 models, and Figures~\ref{fig:infer-pr} and~\ref{fig:infer-confusion} show the
@@ -373,7 +381,7 @@ Main effects + six terms & 0.795 & 0.895 & 0.61 [0.51, 0.69] & 0.84 [0.75, 0.91]
 \label{tab:infer-paired}
 \begin{tabular}{lccccc}
 \toprule
-& \multicolumn{2}{c}{Ads caught (77)} & \multicolumn{2}{c}{Non-ads flagged (408)} & AP gain\\
+& \multicolumn{2}{c}{Ads caught (77 ads)} & \multicolumn{2}{c}{False alarms (408 non-ads)} & AP gain\\
 \cmidrule(lr){2-3}\cmidrule(lr){4-5}
 New model & Main / new & $p$ & Main / new & $p$ & [95\% CI]\\
 \midrule
@@ -390,8 +398,8 @@ do not differ.} The format + interaction model raises test AP from 0.594 to
 0.684. The interval of the gain, [0.039, 0.145], excludes zero, and a similar
 gain (+0.105) appears in the training OOF predictions. At the frozen
 thresholds, however, it catches only 3 more ads than the main-effects model
-and flags 1 fewer non-ad (Table~\ref{tab:infer-paired}); both differences are
-well within chance (McNemar $p=0.25$ and $p=1.00$).
+and flags 1 fewer non-ad (Table~\ref{tab:infer-paired}); neither difference
+is statistically significant (McNemar $p=0.25$ and $p=1.00$).
 
 \emph{The words around an image add the most.} Adding the six terms raises
 test AP from 0.594 to 0.795, a gain of 0.201 (95\% CI [0.092, 0.318]). The
@@ -402,19 +410,24 @@ term model catches every ad that the main-effects model catches plus 23 more:
 20 more non-ads on the test set (42 versus 22, exact McNemar $p<0.001$).
 At the same recall, the term model has higher
 precision than the main-effects model for every recall from 0.08 to 0.96 on
-the test set and from 0.01 to 0.97 on the training OOF predictions
-(Figure~\ref{fig:infer-pr}); it is lower only at the extreme ends of the
-curve, which on the test set rest on the first or last few ads.
+the test set and at every recall up to 0.97 on the training OOF predictions
+(Figure~\ref{fig:infer-pr}). It is lower only for the first six and the
+last few test ads, and above recall 0.97 on the training predictions.
 
 \emph{The precision target on new records.} The thresholds aim for precision
 of at least 0.70 on training data. For the main-effects and format +
 interaction models, the test precision intervals, [0.53, 0.76] and
 [0.56, 0.78], contain 0.70, so the test set is too small to show a shortfall.
 For the term model, the interval [0.51, 0.69] lies just below 0.70: on new
-records its threshold flags somewhat more non-ads than intended.
+records its threshold flags more non-ads than intended. Its test curve in
+Figure~\ref{fig:infer-pr} still reaches precision 0.81 at recall 0.83, but
+27 test non-ads and only one more ad score between 0.14 and 0.31, so the
+frozen threshold of 0.14 admits them all.
 
 \textbf{Conclusion.} On new records, the six terms clearly improve ad
-detection: the term model ranks ads better and, at its threshold, catches
-far more of them. A curved size effect improves the ranking only modestly
-and yields no clear improvement in detection at the chosen thresholds. All conclusions
-rest on one test set with 77 ads.
+detection: the term model ranks ads better (AP +0.201) and, at its
+threshold, catches far more of them (65 against 42 of 77). At that threshold
+it also flags more non-ads (42 against 22), so its test precision, 0.61, is
+below the 0.70 target. A curved size effect improves the ranking only
+modestly (AP +0.090) and yields no clear change in detection at the chosen
+thresholds. All conclusions rest on one test set with 77 ads.
