@@ -46,3 +46,43 @@ The \texttt{missing\_size} flag marks any original feature missing.
 It flags 499 retained records, including 492 missing a geometric value
 and seven missing only Local. The script exports 2,423 rows and 1,561
 columns, a data dictionary and audit tables for Chapter~4.
+
+\section{Data Formatting and Variable Handling}
+
+This section records how the data were formatted, which variables were
+added or removed, and how variables were transformed.
+Table~\ref{tab:preprocessing-variables} summarizes these operations.
+
+\begin{table}[htbp]
+\centering
+\caption{Formatting, variable and transformation steps in preprocessing.}
+\label{tab:preprocessing-variables}
+\small
+\begin{tabular}{@{}p{2.9cm}p{11.2cm}@{}}
+\toprule
+Step & Treatment\\
+\midrule
+Formatting & Whitespace is trimmed, the markers \texttt{?} and empty
+strings become \texttt{NA}, and all feature columns are parsed as numbers.
+The script stops if a non-numeric value remains.\\
+Validation & Height, Width and Aspect\_Ratio must be positive. Local and
+the 1,554 term indicators must be 0, 1 or \texttt{NA}.\\
+Variables added & \texttt{missing\_size}, equal to 1 if any original
+feature is missing. The export index is kept as \texttt{row\_id}.\\
+Variables removed & None. All 1,558 original features are kept; only
+the 856 redundant rows are removed.\\
+Transformations & The numeric headers are renamed to Height, Width,
+Aspect\_Ratio, Local and \texttt{term\_0004} to \texttt{term\_1557}. The
+label becomes the factor \texttt{IsAds} (levels \texttt{ad.},
+\texttt{nonad.}).\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+No value is scaled, imputed or recalculated at this stage. In particular,
+the original Aspect\_Ratio is retained rather than recomputed from Width and
+Height. The processed file therefore differs from the raw file only by the
+removed duplicate rows, the new column names and the added
+\texttt{missing\_size} column. Missing values stay as \texttt{NA}, so any
+imputation required by a model can be fitted on training data only in the
+modelling chapter.
