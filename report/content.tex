@@ -10,6 +10,13 @@
 \listoffigures
 
 \mainmatter
+% Flush earlier floats and keep the next title and opening text together.
+\renewcommand*{\clearforchapter}{\par\FloatBarrier\Needspace{9\baselineskip}}
+\renewcommand*{\chapnamefont}{\normalfont\Large\bfseries}
+\renewcommand*{\chapnumfont}{\chapnamefont}
+\renewcommand*{\afterchapternum}{\quad}
+\setlength{\afterchapskip}{12pt}
+\aliaspagestyle{chapter}{fancy}
 \counterwithin{equation}{section}
 \counterwithin{table}{chapter}
 \counterwithin{figure}{chapter}
