@@ -1,244 +1,113 @@
-% Owner: Tân. Sources at 575ba11 on tan/ch5-ch6-evaluation:
-% Chapters 5 and 6 and docs/CH5_CH6_CHANGES.md.
+% Owner: Tân. Numbers come from Chapter 5 (output/inference/).
 \section{Main Findings}
-
-The analysis compares geometric measurements, missing values and term
-indicators as signals for identifying advertisements. The two model
-extensions use the same main-effects baseline, which includes log width,
-log height, Local and the missingness flag. This makes the gain from
-flexible geometry directly comparable with the gain from adding six
-terms. The comparisons distinguish how the models rank ads from how many
-ads they detect at their chosen thresholds.
-
-Using a common baseline matters for the interpretation. A comparison
-with different baseline predictors would mix the contribution of the
-extra features with the change in the starting model. Both comparisons
-therefore use the same main-effects predictions
-(Table~\ref{tab:infer-models}).
+The analysis compared three kinds of signal for identifying advertisements:
+image size, missing values and the words around an image. Both model
+extensions were compared with the same main-effects model, so their gains are
+directly comparable (Table~\ref{tab:infer-models}). Ordered by the strength of
+the evidence:
 
 \begin{itemize}
-\item \textbf{Width is the main size signal.} Among training records with
-  an observed width, ads were wider by 201.5~px on average (95\% CI
-  [181.4, 221.6]). In the fitted main-effects model, doubling width
-  multiplies the estimated odds of an ad by 5.16 (95\% CI [4.25, 6.25])
-  at a fixed height, Local value and missingness flag. The interval for
-  the adjusted height odds ratio includes 1. Width is informative, but
-  the within-class variation limits its use on its own
-  (Tables~\ref{tab:infer-width} and~\ref{tab:infer-or}).
-
-  Mean width is 325.6~px for ads and 124.2~px for non-ads. Many ads
-  are standard banners around 468~px wide, yet the standard deviation
-  among ads is about 162~px. The Welch comparison describes the mean
-  gap among records with known widths. The logistic estimate describes
-  the change in ad odds associated with doubling width while the other
-  predictors are held fixed.
-
-\item \textbf{Local has a modest association.} Holding the other predictors
-  fixed, records with Local equal to 1 have about 1.55 times the estimated
-  ad odds of those with Local equal to 0 (95\% CI [1.10, 2.17]).
-
-\item \textbf{Missingness is a weak signal.} The observed ad rate was 11.0\%
-  among training records with any missing feature and 17.3\% among
-  complete records (Cram\'er's $V=0.071$). The adjusted estimate compares
-  records at the same fitted predictor values, including values filled by
-  imputation. It answers a different question from the comparison of the
-  raw rates in Table~\ref{tab:infer-missing}. A record with missing width
-  is assigned the training median of 113.5~px, so the fitted comparison
-  uses complete records with the same predictor values. The adjusted
-  odds ratio of 1.45 has an interval of [0.99, 2.13], which includes 1
-  (Table~\ref{tab:infer-or}).
-
-\item \textbf{Term indicators give the largest gain in ranking.} The
-  strongest terms read like advertising. For example, \texttt{url*ads}
-  refers to \texttt{ads} in an image URL, \texttt{ancurl*click} to
-  \texttt{click} in the linked URL and \texttt{alt*click} to
-  \texttt{click} in the alternative text. \texttt{ancurl*com} is also
-  among the leading terms. Each of the six selected terms occurs in
-  27--45\% of training ads and at most 1.2\% of training non-ads
-  (Table~\ref{tab:infer-term-chi}).
-
-  Adding the six terms to the main-effects model raises test average
-  precision (AP) from 0.594 to
-  0.795 (gain 0.201, 95\% CI [0.092, 0.318]). At the selected
-  thresholds, the term model detects 65 of 77 ads, compared with 42
-  for the baseline, and flags 42 non-ads, compared with 22. On this
-  test set that amounts to 23 fewer missed ads and 20 additional
-  false alarms. The paired counts show that the term model catches
-  every ad caught by the baseline and 23 more
-  (exact McNemar $p<0.001$). Its test recall interval is
-  [0.75, 0.91], compared with [0.43, 0.65] for the baseline.
-  At matched recall from 0.08 to 0.96 on the test curve, it also
-  achieves higher precision (Figure~\ref{fig:infer-pr}).
-
-  The joint training comparison gives a drop in deviance of 523.8
-  on six degrees of freedom ($p<0.001$). This indicates much better
-  fit on the training data. The held-out AP and paired detection
-  results show how much of the improvement is visible on new records.
-
-\item \textbf{Flexible geometry improves the ranking.} The format and
-  interaction model increases test AP from 0.594 to 0.684 (gain 0.090,
-  95\% CI [0.039, 0.145]). At the selected thresholds it detects three
-  additional ads and flags one fewer non-ad. The paired differences
-  at those thresholds have exact McNemar $p$ values of 0.25 for ads
-  and 1.00 for non-ads. The gain in AP is also visible in the
-  out-of-fold training predictions, where it is 0.105. The comparison
-  evaluates natural cubic splines for the two log dimensions, the
-  height--width interaction and the indicator for aspect ratio at
-  least six together
-  (Tables~\ref{tab:infer-models} and~\ref{tab:infer-paired}).
+\item \textbf{The words around an image carry the most information.} The
+  leading term is \texttt{ancurl*com} (``com'' in the linked URL), followed
+  by advertising cues such as \texttt{url*ads}, \texttt{ancurl*click} and
+  \texttt{alt*click}. Adding six terms to the main-effects model raises test
+  average precision by 0.201 (95\% CI [0.092, 0.318]). At the chosen
+  thresholds it catches 23 more of the 77 test ads, while it also flags 20
+  more non-ads (Section~\ref{sec:infer-compare}).
+\item \textbf{A curved size effect improves ranking, but not the decisions at
+  the chosen threshold.} The format + interaction model raises test average
+  precision by 0.090 (95\% CI [0.039, 0.145]), but it catches only 3 more ads,
+  a difference consistent with chance. The splines, the wide-banner indicator
+  and the height--width interaction were added together, so this comparison
+  measures their combined gain and cannot separate the three parts.
+\item \textbf{Width is the main size signal.} Among images with an observed
+  width, ads are about 200~px wider on average, and each doubling of width
+  multiplies the odds of an ad by about 5.2 when the other predictors are
+  held fixed. There is no evidence of a height association once width is
+  known.
+\item \textbf{Local and missingness are weak signals.} Local~=~1 goes with
+  modestly higher odds of an ad (OR 1.55). Missing feature values are slightly
+  more common among non-ads (Cram\'er's $V=0.071$); after adjustment, the
+  missingness odds ratio depends on the median width used for filling and does
+  not describe missingness itself.
 \end{itemize}
 
 \section{Strengths of the Methods}
-
 \begin{itemize}
-\item \textbf{Grouped validation.} Exact duplicates were removed before
-  analysis. Records with identical predictor values were assigned as a
-  group, so no such group is shared between the training and test sets.
-  Each model was evaluated on the same 485 held-out records, making the
-  comparisons directly paired.
-
-\item \textbf{Training-based fitting and threshold selection.} For each
-  held-out fold, imputation values and selected terms were determined from
-  the other folds. The model fitted on those folds scored the held-out
-  fold. This yields one out-of-fold prediction per training record
-  across five folds. The rule maximises recall among thresholds that
-  reach precision of at least 0.70 on these predictions. The thresholds
-  were approximately 0.40 for the baseline, 0.29 for format and
-  interaction, and 0.14 for the term model. After refitting on all
-  1,938 training records, the models used these fixed thresholds on
-  the 485 test records.
-
-\item \textbf{Interpretable estimates and complementary metrics.} Odds
-  ratios and confidence intervals describe the size and uncertainty of
-  adjusted associations. The precision--recall curves show how ranking
-  translates into performance over a range of thresholds. The confusion
-  matrices give the actual counts of missed ads and false alarms at the
-  chosen thresholds (Figures~\ref{fig:infer-pr}
-  and~\ref{fig:infer-confusion}).
-
-  Precision measures the share of flagged records that are ads.
-  Recall measures the share of actual ads detected. AP summarises
-  the precision obtained as recall increases, with the test ad
-  prevalence of 0.159 as a reference. The format and interaction
-  model and the term model both improve test ROC-AUC as well as AP.
-  Their test ROC-AUC values are 0.827 and 0.895, respectively,
-  compared with 0.762 for the baseline.
-
-\item \textbf{Missingness retained as information.} The
-  \texttt{missing\_size} flag records whether any original feature is
-  missing. The training medians and Local mode provide values for
-  model fitting, while the flag preserves the distinction needed
-  for the missingness analysis.
-
-\item \textbf{Uncertainty on the same records.} Wilson intervals describe
-  the uncertainty in precision and recall. The exact McNemar comparisons
-  focus on records flagged by just one of the paired models and assess ads
-  and non-ads separately. The stratified paired bootstrap uses 2,000
-  resamples, drawing ads and non-ads separately and using the same
-  sampled records for both models. Thus the AP intervals quantify
-  the ranking gain, while the paired tests quantify evidence about
-  decisions at the chosen thresholds.
+\item \textbf{No leakage between training and test data.} Exact duplicates
+  were removed, and records with identical features were kept on one side of
+  the split. Imputation, term selection and decision thresholds were set on
+  training data, inside each cross-validation fold where needed, and frozen
+  before the single test evaluation. The test results therefore measure
+  performance on records the models have not seen.
+\item \textbf{Paired comparisons with one baseline.} All models were scored
+  on the same 485 test records and compared with the same main-effects
+  model. The McNemar tests and the paired bootstrap use the record-by-record
+  agreement between two models, so they can detect smaller differences than
+  a comparison of two separate rates.
+\item \textbf{Ranking and decisions are judged separately.} Average
+  precision and the precision--recall curves show how well a model ranks ads
+  at every threshold; the confusion matrices and Wilson intervals show the
+  actual numbers of missed ads and false alarms at the chosen threshold. This
+  separation showed that the curved size effect improves ranking without
+  changing the decisions.
+\item \textbf{Interpretable estimates with stated uncertainty.} Odds ratios
+  with confidence intervals give the direction and size of each association,
+  and test precision, recall and the paired AP gains come with confidence
+  intervals, so small gains are not presented as certain.
+\item \textbf{Missingness kept as information.} The \texttt{missing\_size}
+  flag kept the fact that a value was missing instead of hiding it by filling
+  it in, which made the missingness test in Section~\ref{sec:infer-missing}
+  possible.
 \end{itemize}
 
 \section{Limitations}
-
 \begin{itemize}
-\item \textbf{One test split.} The final assessment uses 77 ads and
-  408 non-ads from a single split. The bootstrap varies which test
-  records are sampled while keeping the fitted models fixed. Variation
-  due to refitting on a different training sample would require
-  additional validation.
-
-  Table~\ref{tab:infer-models} also reports intervals on the training
-  out-of-fold predictions. Those intervals are descriptive because
-  the same predictions were used to choose the thresholds. The test
-  intervals describe performance on the held-out records at those
-  fixed thresholds.
-
-\item \textbf{Exploratory term selection.} The six terms were ranked
-  by the absolute difference in prevalence between ads and non-ads,
-  considering terms present in at least 20 training records.
-  Chapter~4 had already displayed the selected indicators for the
-  full dataset, including observations later assigned to the test
-  set. The six terms therefore illustrate associations discovered
-  in this dataset. The small adjusted $p$ values and the
-  likelihood-ratio result are exploratory because the terms were
-  selected from the same data used to assess their training
-  associations.
-
-  Of the 213 terms meeting the training count cutoff, 116 had
-  expected cell counts of at least five and were tested. The
-  Benjamini--Hochberg adjustment addresses multiple testing across
-  those 116 terms. It leaves 101 significant at the 5\% level.
-  The six indicators in the final training fit also depend on the
-  training sample. In folds 3--5, \texttt{ancurl*redirect} replaced
-  \texttt{alt*click+here}.
-
-\item \textbf{Overlapping terms and near-separation.} Of the 117
-  training records with at least one of the three selected
-  \texttt{alt} indicators, 98 had all three. This overlap makes it
-  difficult to estimate their individual associations.
-  \texttt{alt*click+here} occurs only with the other two
-  \texttt{alt} terms and its Wald interval is [0.03, 43.70].
-  Some term combinations also occur almost exclusively among ads.
-  During fitting, R reported probabilities numerically equal to 0
-  or 1. The fitted odds ratios for \texttt{ancurl*com},
-  \texttt{url*ads}, \texttt{ancurl*click} and \texttt{alt*click}
-  indicate positive associations after adjustment. The largest
-  estimates and their Wald intervals are rough guides to the
-  magnitude of those associations (Table~\ref{tab:infer-term-or}).
-
-\item \textbf{Precision on new records.} The term model achieves test
-  precision of 0.607 (95\% Wilson CI [0.51, 0.69]), below the
-  0.70 target used to choose its threshold from training predictions.
-  The test precision intervals for the baseline and the format and
-  interaction model, [0.53, 0.76] and [0.56, 0.78], both include 0.70.
-  Compared at the thresholds set in training, the term model has the
-  highest test recall and the highest number of false alarms. The
-  precision--recall curve is useful when considering where to operate
-  within this trade-off.
-
+\item \textbf{One small test split.} All test results rest on one split with
+  77 ads. The bootstrap intervals vary the test records but keep the fitted
+  models fixed, so they do not include the variation from refitting on a
+  different training sample.
+\item \textbf{Exploratory term selection.} Chapter~5 selected the six terms
+  inside the training data and inside each fold, but Chapter~4 had already
+  shown the same indicators on all records, so the choice of screening rule
+  was not blind to the test records. Selecting and testing the terms on the
+  same training data also makes their chi-square and likelihood-ratio
+  $p$ values optimistic, and many term columns repeat the same pattern (the
+  101 significant terms form only 74 distinct patterns).
+\item \textbf{Overlapping terms and near-separation.} The three \texttt{alt}
+  terms nearly always occur together, and some term combinations occur
+  almost only among ads. Their individual odds ratios are therefore
+  imprecise, and the largest estimates and their Wald intervals are only
+  rough guides (Table~\ref{tab:infer-term-or}).
+\item \textbf{Precision on new records.} The term model's test precision,
+  0.61 (95\% CI [0.51, 0.69]), is below the 0.70 target used to choose its
+  threshold. A group of test non-ads scores just above that threshold, which
+  shows that a threshold set on training data may not carry over exactly to
+  new records.
 \item \textbf{Independence and representativeness.} The tests assume
-  independent records. Images from a common page or site may still
-  be related after exact duplicates are removed. According to the
-  UCI documentation, the images were collected in 1998, so the
-  results apply most directly to images like those in that collection.
-  Advertising formats may differ on recent websites
-  \citep{kushmerick1999}.
-
-\item \textbf{Observed widths only.} The width comparison uses 265 ads
-  and 1,269 non-ads with an observed width. Missingness differs by
-  class, which limits generalisation of that comparison to images
-  whose dimensions are unavailable.
+  independent records, but several images can come from the same page or
+  site, which the data cannot identify. According to the UCI documentation,
+  the images were collected in 1998 \citep{kushmerick1999}, and advertising
+  formats have changed since then.
+\item \textbf{Observed widths only.} The width test uses only images with an
+  observed width. Because missingness differs between the classes, its
+  result may not apply to images whose size is unknown.
 \end{itemize}
 
 \section{Suggested Extensions}
-
 \begin{itemize}
-\item \textbf{Confirm a few prespecified terms.} Choose patterns such
-  as \texttt{url*ads} and \texttt{ancurl*click} before examining a new
-  dataset. Check their class-specific prevalence and incremental value
-  against the same main-effects baseline. Selecting them before
-  examining the new records makes this a confirmatory check of the
-  chosen patterns.
-
-\item \textbf{Evaluate all term indicators with penalized regression.}
-  An elastic-net logistic model could use all 1,554 term indicators
-  by combining lasso variable selection with ridge shrinkage. The
-  penalty helps stabilise coefficients for groups of overlapping
-  terms and reduces the extreme estimates that arise under
-  near-separation.
-
-\item \textbf{Repeat grouped validation.} Repeated grouped
-  cross-validation would show how much the performance gains vary
-  across splits. With the same comparison in each split, the
-  variability of the gain from flexible geometry and from the
-  selected terms can be compared across held-out records.
-
-\item \textbf{Set the threshold using error costs.} The current
-  thresholds were chosen to maximise recall at a training precision
-  of at least 0.70. A practical threshold should reflect the
-  relative cost of a false alarm and a missed ad. Its precision
-  and recall should then be checked on recent data from other
-  websites.
+\item \textbf{Confirm a few terms chosen in advance.} Fix terms such as
+  \texttt{url*ads} and \texttt{ancurl*click} before looking at a new dataset,
+  and test their added value against the same main-effects model, so that
+  the result is confirmatory.
+\item \textbf{Use all terms with penalized regression.} An elastic-net
+  logistic model, which combines the variable selection of the lasso with the
+  shrinkage of ridge regression, can include all 1,554 terms together with
+  the flexible size effects. The penalty stabilizes groups of overlapping
+  terms and prevents the extreme estimates caused by near-separation.
+\item \textbf{Repeat the split.} Repeated grouped cross-validation would show
+  how much each gain varies from one split to another.
+\item \textbf{Set the threshold by error costs.} A practical threshold should
+  reflect the relative cost of a false alarm and of a missed ad, and it
+  should be checked on recent data from other websites.
 \end{itemize}
